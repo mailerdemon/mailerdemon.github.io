@@ -1,130 +1,56 @@
-This theme stared out being a fork from the [Block-log](https://github.com/anandubajith/block-log). It still keeps many similarities. Minimal-block is a minimalistic, responsive and friendly Jekyllrb theme. It has almost no javascript (except for disquss), static social share buttons, rss, paginator, clean and simple permalinks and RSS.
+# Carte Noire
 
+A simple Jekyll theme for blogging. Not named after the coffee.
 
-[Live Demo](http://drvy.github.io/minimal-block/)
+![Homepage](http://i.imgur.com/xlmHArV.png)
 
-[Download](https://github.com/drvy/minimal-block/archive/master.zip)
+### Article
+![Article](http://i.imgur.com/8rD8FfC.png)
 
-[Github Repository](https://github.com/drvy/minimal-block)
+### Disqus Comments
+![Comments](http://i.imgur.com/TBZHQwF.png)
 
+### Posts grouped by year
+![All Posts](http://i.imgur.com/9bNs2Sc.png)
 
-![minimal-block preview](https://raw.githubusercontent.com/drvy/minimal-block/master/preview.png)
+### JavaScript Search
+![Search](http://i.imgur.com/yQqMeSl.png)
 
-Setting up
-----------------
-To start you own blog, simply git clone the repository on github.
+### Menu by mmenu
+![Menu](http://i.imgur.com/SClrNSH.png)
 
-    git clone https://github.com/drvy/minimal-block.git
+## Contact
+If you wish to contact me regarding this theme please raise an issue on GitHub,
+tweet me [@_jacobtomlinson](http://www.twitter.com/_jacobtomlinson) or email me
+[jacob@jacobtomlinson.co.uk](mailto:jacob@jacobtomlinson.co.uk).
 
-Once cloned, edit the `_config.yml` file at the root of the repository.
+## Contribution
+Pull requests are very welcome.
 
-To add your own posts, add a file to the _posts directory. The file name has to follow the following structure.
+## Theme
+This jekyll theme has been created from scratch. Ideas and inspiration are taken
+from other places but the code is my own.
 
-    year-month-day-title.md
-    2015-01-25-Hello-world.md
+## Tools and Libraries
+The following tools and libraries are used in this theme
 
-The post doesn't have to be writen in markdown but it's recomended. Notice that the URL of the post will contain the “Hello-world” part so the title of the file must be URL friendly.
+### JavaScript
+ * [jQuery](http://jquery.com/)
+ * [MMenu](http://mmenu.frebsite.nl/)
+ * [HighlightJS](https://highlightjs.org/)
+ * [Simple Jekyll Search](https://github.com/christian-fei/Simple-Jekyll-Search)
 
+### CSS
+ * [Bootstrap](http://getbootstrap.com/)
+ * [Font Awesome](http://fortawesome.github.io/Font-Awesome/)
 
-Things to change in `_config.yml`
-----------------
-This file contains the configuration of your blog. By default, it looks like this:
+### Social
+ * [AddThis](http://www.addthis.com/)
+ * [Disqus](https://disqus.com/)
 
-    # General
-    name: Minimal-Block
-    description: "Minimalistic, friendly, responsive."
-    url: http://localhost:4000
+### Other
+ * [Real Favicon Generator](http://realfavicongenerator.net/)
+ * [Google Analytics](http://www.google.com/analytics/)
 
-    markdown: redcarpet
-    highlighter: pygments
-
-    paginate: 5
-    permalink: /:title
-
-    # Social share and comments.
-    disqus-id: yourusername
-    twitter: yourusername
-    github: yourusername
-    google: +yourusername
-
-    # RSS feed
-    rss-feed-limit: 10
-    rss-show-full: "yes"
-
-You will need to change `name` , `url` , `twitter`, `disqus-id`, `google` and `github`. All others are optional. Here is what the variables mean.
-
-<table>
-<thead>
-    <tr><th>Name</th><th>Description</th></tr>
-</thead>
-<tbody>
-    <tr><td>name</td><td>The name of your jekyll site. The title.</td></tr>
-    <tr><td>description</td><td>Basic description. Sub-title.</td></tr>
-    <tr><td>url</td><td>Where will be the jekyll site. The main URL without the endind / (slash).</td></tr>
-    <tr><td>markdown</td><td>The preffered markdown parser to use.</td></tr>
-    <tr><td>highlighter</td><td>The syntax-highlighter to use. If not set, `highlights.css` will not be included.</td></tr>
-    <tr><td>paginate</td><td>How much posts to show per page.</td></tr>
-    <tr><td>permalink</td><td>The friendly urls of the post. `none` is the jekyll default.</td></tr>
-    <tr><td>disqus-id</td><td>The disqus ID. If not set, comments will not be shown.</td></tr>
-    <tr><td>twitter</td><td>Your twitter username (used while sharing).</td></tr>
-    <tr><td>github</td><td>Your github username.</td></tr>
-    <tr><td>google</td><td>Youre google+ username.</td></tr>
-    <tr><td>rss-feed-limit</td><td>How much entries to display in the feed.xml (rss).</td></tr>
-    <tr><td>rss-show-full</td><td>The show the full post or to put only the excerpt (yes | no).</td>
-</tbody>
-</table>
-
-For more information on Jekyll, visit their [wiki on github](https://github.com/mojombo/jekyll/wiki). For more information on GitHub Pages visit [their site](http://pages.github.com).
-
-
-Writing posts.
-----------------
-Checkout the Jekyllrb [wiki](https://github.com/mojombo/jekyll/wiki) for documentation on writing posts. This theme
-makes use of static sharing buttons and they use a few tags that you should include in your posts.
-An example of a post header:
-
-    ---
-    layout: post
-    title:  "minimal-block - A minimalistic responsive Jekyll theme"
-    date:   2015-01-25 00:00:00
-    categories: jekyll, themes
-    tags: jekyll, theme, minimal
-    shortUrl: http://goo.gl/JhfZT9
-    ---
-
-Most of these variables are just the default ones but the last two (`tags` and `shortUrl`) are used by the theme when sharing via the social buttons in the end of every post.
-
-Specifically, `tags` will be converted into hashtags when sharing on Twitter and if you supply a `shortUrl`, it will be used instead of the full url. This is useful if you are using [goo.gl](http://goo.gl) since they provide statistics for each short link and that way you can see how many people are sharing your post.
-
-
-Pages and other files.
-----------------
-Each page has its own directory in the root folder of the theme. In each directory there is an index.html representing the contents of the page. Take a look at the default ones (about and contact) to see the structure.
-
-Another file to know about is the `footer.html` as it has the copyright notice and credits. This file is located in the `_includes` folder. You can remove the credits if you want but I would love you if you give me some credit in the HTML source.
-
-The `404` file is located in the root folder and it contains the exactly same structure as a page.
-
-License
-----------------
-The MIT License (MIT)
-
-    Copyright (c) 2015 Dragomir V Yordanov
-
-    Permission is hereby granted, free of charge, to any person obtaining a copy
-    of this software and associated documentation files (the "Software"), to deal
-    in the Software without restriction, including without limitation the rights
-    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-    copies of the Software, and to permit persons to whom the Software is
-    furnished to do so, subject to the following conditions:
-
-    The above copyright notice and this permission notice shall be included in all
-    copies or substantial portions of the Software.
-
-    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-    SOFTWARE.
+## License
+The jekyll theme, HTML, CSS and JavaScript is licensed under GPLv3 (unless stated otherwise in the file).
