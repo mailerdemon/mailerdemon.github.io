@@ -1,6 +1,14 @@
 [
   
   {
+    "title"    : "Bastion",
+    "category" : "",
+    "tags"     : "hackthebox, writeup, walkthrough",
+    "url"      : "/writeup/2019/01/19/bastion-writeup/",
+    "date"     : "2019-01-19 13:02:19 -0500"
+    } ,
+    
+  {
     "title"    : "Welcome to Carte Noire",
     "category" : "",
     "tags"     : "welcome, to, carte, noire",

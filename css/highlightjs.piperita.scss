@@ -23,10 +23,10 @@ $dark-aqua:       #86D1D7;
 $light-white:     #FFFFFF;
 $dark-white:      #DBDBDB;
 
-
 /* Piperita Dark Title */
 .hljs-title {
   color: $dark-white;
+  font-size: 12px;
 }
 
 /* Piperita Dark Green */
@@ -43,6 +43,7 @@ $dark-white:      #DBDBDB;
 .css .hljs-class,
 .css .hljs-pseudo {
   color: $dark-green;
+  font-size: 12px;
 }
 
 /* Piperita Dark Orange */
@@ -54,12 +55,14 @@ $dark-white:      #DBDBDB;
 .hljs-params,
 .hljs-constant {
   color: #df5320;
+  font-size: 12px;
 }
 
 /* Piperita Dark Yellow */
 .hljs-ruby .hljs-class .hljs-title,
 .css .hljs-rules .hljs-attribute {
   color: $dark-yellow;
+  font-size: 12px;
 }
 
 /* Piperita Dark Red */
@@ -70,11 +73,13 @@ $dark-white:      #DBDBDB;
 .ruby .hljs-symbol,
 .xml .hljs-cdata {
   color: $dark-red;
+  font-size: 12px;
 }
 
 /* Piperita Dark Aqua */
 .css .hljs-hexcolor {
   color: $dark-aqua;
+  font-size: 12px;
 }
 
 /* Piperita Dark Blue */
@@ -88,12 +93,14 @@ $dark-white:      #DBDBDB;
 .javascript .hljs-title,
 .coffeescript .hljs-title {
   color: $dark-blue;
+  font-size: 12px;
 }
 
 /* Piperita Dark Purple */
 .hljs-keyword,
 .javascript .hljs-function {
   color: $dark-purple;
+  font-size: 12px;
 }
 
 .hljs {
@@ -101,6 +108,7 @@ $dark-white:      #DBDBDB;
   overflow-x: auto;
   color: $base-white;
   -webkit-text-size-adjust: none;
+  font-size: 12px;
 }
 
 .coffeescript .javascript,
@@ -111,4 +119,9 @@ $dark-white:      #DBDBDB;
 .xml .css,
 .xml .hljs-cdata {
   opacity: 0.5;
+  font-size: 12px;
+}
+
+.plaintext {
+  font-size: 12px;
 }

