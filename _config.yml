@@ -6,8 +6,8 @@ baseurl: ""
 url: "https://phaz0n.github.io"
 title_description: "CTF write-ups, course reviews, and security tool cheatsheets"
 title_image: "/images/metroid.png"
-google_analytics:
-disqus_account:
+google_analytics: UA-148827626-1
+disqus_account: phaz0n
 github_repository: https://github.com/phaz0n
 addthis_id: ra-513c6fa83da6ec67
 post_limit: 5

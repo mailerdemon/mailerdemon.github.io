@@ -1,7 +1,7 @@
 ---
 layout:     post
 title:      Bastion
-date:       2019-01-19 18:02:19
+date:       2019-09-25 18:02:19
 summary:    Write-up of HackTheBox's Bastion.
 categories: writeup
 thumbnail: flag

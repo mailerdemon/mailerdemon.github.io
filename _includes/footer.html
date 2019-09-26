@@ -68,7 +68,7 @@
 </script>
 {% endif %}
 
-{% if site.google_analytics %}
+{% if site.google_analytics and jekyll.environment == 'production' %}
 <script type="text/javascript">
   var _gaq = _gaq || [];
   _gaq.push(['_setAccount', '{{ site.google_analytics }}']);
