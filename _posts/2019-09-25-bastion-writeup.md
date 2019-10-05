@@ -14,6 +14,8 @@ tags:
 
 ![](/images/bastion/infocard.png)
 
+Bastion is a relatively straightforward box with one strange quirk: to enumerate appropriately, you have to mount a VHD within an SMB share (that you also have to mount...). It isn't difficult to do these things, but it does take some creative thinking to consider. Privilege escalation involves insecure stored credentials with mRemoteNG. Here, I use a Python script released publicly _after_ this box went live--but others who did the box earlier in its life were able to use the stored credentials in the mRemoteNG GUI itself.
+
 # Initial Scan
 
 {% highlight plaintext %}
@@ -121,7 +123,7 @@ Password for anonymous@//10.10.10.134/Backups:
 
 ![](/images/bastion/image2.png)
 
-Those juicy VHDs, though, aren't readable this way. To browse through them, we have to mount those as well. For VHD files, we have to first install `guestmount`.
+The VHDs, though, aren't readable this way. To browse through them, we have to mount those as well. For VHD files, we have to first install `guestmount`.
 
 {% highlight plaintext %}
 root@kali:~# apt-get install libguestfs-tools
@@ -239,7 +241,7 @@ l4mpje@BASTION C:\>dir "Program Files (x86)"
               14 Dir(s)  11.244.994.560 bytes free                              
 {% endhighlight %}
 
-We can find the version number in the changelog file and look for a known exploit, but this doesn't get us very far. 
+We can find the version number in the changelog file and search for a known exploit, but this doesn't get us very far. 
 
 A search for "mRemoteNG stored credentials", however, results in [exactly what we're looking for](http://hackersvanguard.com/mremoteng-insecure-password-storage/):
 
@@ -251,9 +253,9 @@ As the post explains, mRemoteNG is used to help manage remote connections (e.g.,
 <Node Name="DC" Type="Connection" Descr="" Icon="mRemoteNG" Panel="General" Id="500e7d58-662a-44d4-aff0-3a4f547a3fee" Username="Administrator" Domain="" Password="aEWNFV5uGcjUHF0uS17QTdT9kVqtKCPeoC0Nw5dmaPFjNQ2kt/zO5xDqE4HdVmHAowVRdC7emf7lWWA10dQKiw==" Hostname="127.0.0.1" Protocol="RDP" . . . 
 {% endhighlight %}
 
-This specifies that the protocol is RDP, so we can assume that this credential would be reused for SSH as well.
+This specifies that the protocol is RDP. We can assume that this credential would be reused for SSH as well.
 
-You can find a handful of options available for decrypting an mRemoteNG password (including the one described in the previously linked-to [blog post](http://hackersvanguard.com/mremoteng-insecure-password-storage/)). 
+You can find a handful of options available for decrypting an mRemoteNG password. The previously linked-to [blog post](http://hackersvanguard.com/mremoteng-insecure-password-storage/) describes a method via the GUI, which seems to be the intended way in this box. 
 
 What worked best for me was [mRemoteNG_Decrypt.py](https://github.com/haseebT/mRemoteNG-Decrypt). I copied the encrypted password and passed it as a string to get the plaintext credential.
 

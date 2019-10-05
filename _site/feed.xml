@@ -5,13 +5,15 @@
     <description>A blog</description>
     <link>http://localhost:4000/</link>
     <atom:link href="http://localhost:4000/feed.xml" rel="self" type="application/rss+xml" />
-    <pubDate>Sun, 29 Sep 2019 16:30:44 -0400</pubDate>
-    <lastBuildDate>Sun, 29 Sep 2019 16:30:44 -0400</lastBuildDate>
-    <generator>Jekyll v3.8.5</generator>
+    <pubDate>Sat, 05 Oct 2019 09:13:37 -0400</pubDate>
+    <lastBuildDate>Sat, 05 Oct 2019 09:13:37 -0400</lastBuildDate>
+    <generator>Jekyll v4.0.0</generator>
     
       <item>
         <title>Bastion</title>
         <description>&lt;p&gt;&lt;img src=&quot;/images/bastion/infocard.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Bastion is a relatively straightforward box with one strange quirk: to enumerate appropriately, you have to mount a VHD within an SMB share (that you also have to mount…). It isn’t difficult to do these things, but it does take some creative thinking to consider. Privilege escalation involves insecure stored credentials with mRemoteNG. Here, I use a Python script released publicly &lt;em&gt;after&lt;/em&gt; this box went live–but others who did the box earlier in its life were able to use the stored credentials in the mRemoteNG GUI itself.&lt;/p&gt;
 
 &lt;h1 id=&quot;initial-scan&quot;&gt;Initial Scan&lt;/h1&gt;
 
@@ -108,7 +110,7 @@ Password for anonymous@//10.10.10.134/Backups:  &lt;/code&gt;&lt;/pre&gt;&lt;/fi
 
 &lt;p&gt;&lt;img src=&quot;/images/bastion/image2.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
 
-&lt;p&gt;Those juicy VHDs, though, aren’t readable this way. To browse through them, we have to mount those as well. For VHD files, we have to first install &lt;code class=&quot;highlighter-rouge&quot;&gt;guestmount&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;The VHDs, though, aren’t readable this way. To browse through them, we have to mount those as well. For VHD files, we have to first install &lt;code class=&quot;highlighter-rouge&quot;&gt;guestmount&lt;/code&gt;.&lt;/p&gt;
 
 &lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~# apt-get install libguestfs-tools&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
 
@@ -206,7 +208,7 @@ l4mpje@BASTION C:\Users\L4mpje&amp;gt;    &lt;/code&gt;&lt;/pre&gt;&lt;/figure&g
                0 File(s)              0 bytes                                   
               14 Dir(s)  11.244.994.560 bytes free                              &lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
 
-&lt;p&gt;We can find the version number in the changelog file and look for a known exploit, but this doesn’t get us very far.&lt;/p&gt;
+&lt;p&gt;We can find the version number in the changelog file and search for a known exploit, but this doesn’t get us very far.&lt;/p&gt;
 
 &lt;p&gt;A search for “mRemoteNG stored credentials”, however, results in &lt;a href=&quot;http://hackersvanguard.com/mremoteng-insecure-password-storage/&quot;&gt;exactly what we’re looking for&lt;/a&gt;:&lt;/p&gt;
 
@@ -218,9 +220,9 @@ l4mpje@BASTION C:\Users\L4mpje&amp;gt;    &lt;/code&gt;&lt;/pre&gt;&lt;/figure&g
 
 &lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-xml&quot; data-lang=&quot;xml&quot;&gt;&lt;span class=&quot;nt&quot;&gt;&amp;lt;Node&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Name=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;DC&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Type=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;Connection&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Descr=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Icon=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;mRemoteNG&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Panel=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;General&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Id=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;500e7d58-662a-44d4-aff0-3a4f547a3fee&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Username=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;Administrator&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Domain=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Password=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;aEWNFV5uGcjUHF0uS17QTdT9kVqtKCPeoC0Nw5dmaPFjNQ2kt/zO5xDqE4HdVmHAowVRdC7emf7lWWA10dQKiw==&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Hostname=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;127.0.0.1&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Protocol=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;RDP&quot;&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;.&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;.&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;.&lt;/span&gt; &lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
 
-&lt;p&gt;This specifies that the protocol is RDP, so we can assume that this credential would be reused for SSH as well.&lt;/p&gt;
+&lt;p&gt;This specifies that the protocol is RDP. We can assume that this credential would be reused for SSH as well.&lt;/p&gt;
 
-&lt;p&gt;You can find a handful of options available for decrypting an mRemoteNG password (including the one described in the previously linked-to &lt;a href=&quot;http://hackersvanguard.com/mremoteng-insecure-password-storage/&quot;&gt;blog post&lt;/a&gt;).&lt;/p&gt;
+&lt;p&gt;You can find a handful of options available for decrypting an mRemoteNG password. The previously linked-to &lt;a href=&quot;http://hackersvanguard.com/mremoteng-insecure-password-storage/&quot;&gt;blog post&lt;/a&gt; describes a method via the GUI, which seems to be the intended way in this box.&lt;/p&gt;
 
 &lt;p&gt;What worked best for me was &lt;a href=&quot;https://github.com/haseebT/mRemoteNG-Decrypt&quot;&gt;mRemoteNG_Decrypt.py&lt;/a&gt;. I copied the encrypted password and passed it as a string to get the plaintext credential.&lt;/p&gt;
 

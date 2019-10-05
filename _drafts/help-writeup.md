@@ -1,7 +1,6 @@
 ---
 layout:     post
 title:      Help
-date:       2020-01-01 00:00:00
 summary:    Write-up of HackTheBox's Help.
 categories: writeup
 thumbnail: phone

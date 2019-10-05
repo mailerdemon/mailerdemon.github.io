@@ -1,10 +1,10 @@
 # Site settings
 title: "phaz0n"
-email: smackey@protonmail.com
+email: phaz0n808@gmail.com
 description: "A blog"
 baseurl: ""
 url: "https://phaz0n.github.io"
-title_description: "CTF write-ups, course reviews, and security tool cheatsheets"
+title_description: "HackTheBox write-ups. Maybe more someday."
 title_image: "/images/metroid.png"
 google_analytics: UA-148827626-1
 disqus_account: phaz0n
@@ -25,7 +25,10 @@ facebook_link:
 
 # Footer
 footer_left: "Theme by <a href=\"https://twitter.com/_JacobTomlinson\">Jacob Tomlinson</a>"
-footer_right: "&lt;/&gt; on <a href=\"https://github.com/phaz0n\">Github</a> &nbsp;<i class=\"fa fa-github-alt\"></i>"
+footer_right: "phaz0n on <a href=\"https://github.com/phaz0n\">Github</a> &nbsp;<i class=\"fa fa-github-alt\"></i>"
+
+# Filtering Content
+show_drafts: null
 
 # Build settings
 markdown: kramdown
