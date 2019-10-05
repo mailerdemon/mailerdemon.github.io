@@ -5,15 +5,15 @@
     <description>A blog</description>
     <link>http://localhost:4000/</link>
     <atom:link href="http://localhost:4000/feed.xml" rel="self" type="application/rss+xml" />
-    <pubDate>Sat, 05 Oct 2019 09:13:37 -0400</pubDate>
-    <lastBuildDate>Sat, 05 Oct 2019 09:13:37 -0400</lastBuildDate>
+    <pubDate>Sat, 05 Oct 2019 14:14:33 -0400</pubDate>
+    <lastBuildDate>Sat, 05 Oct 2019 14:14:33 -0400</lastBuildDate>
     <generator>Jekyll v4.0.0</generator>
     
       <item>
-        <title>Bastion</title>
+        <title>Bastion (HTB)</title>
         <description>&lt;p&gt;&lt;img src=&quot;/images/bastion/infocard.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
 
-&lt;p&gt;Bastion is a relatively straightforward box with one strange quirk: to enumerate appropriately, you have to mount a VHD within an SMB share (that you also have to mount…). It isn’t difficult to do these things, but it does take some creative thinking to consider. Privilege escalation involves insecure stored credentials with mRemoteNG. Here, I use a Python script released publicly &lt;em&gt;after&lt;/em&gt; this box went live–but others who did the box earlier in its life were able to use the stored credentials in the mRemoteNG GUI itself.&lt;/p&gt;
+&lt;p&gt;Bastion is a relatively straightforward box with one strange quirk: to enumerate appropriately, you have to mount a VHD within an SMB share (that you also have to mount…). It isn’t difficult to do these things, but it does take some creative thinking to consider. Privilege escalation leverages the insecure manner in which mRemoteNG stores credentials. You can exploit this in a couple of cool ways through the mRemoteNG GUI itself—or, you can opt for the quick (but forgettable) Python script that wasn’t available until &lt;em&gt;after&lt;/em&gt; the box was released.&lt;/p&gt;
 
 &lt;h1 id=&quot;initial-scan&quot;&gt;Initial Scan&lt;/h1&gt;
 
@@ -60,7 +60,7 @@ Nmap done: 1 IP address (1 host up) scanned in 19.66 seconds&lt;/code&gt;&lt;/pr
 
 &lt;h1 id=&quot;enumerating-smb&quot;&gt;Enumerating SMB&lt;/h1&gt;
 
-&lt;p&gt;It’s always worth testing to see if SMB permits null (aka anonymous) sessions. &lt;strong&gt;We need a share&lt;/strong&gt; to try authenticating to first. So we list out the shares.&lt;/p&gt;
+&lt;p&gt;It’s always worth testing to see if SMB permits null (aka anonymous) sessions. &lt;strong&gt;We need a share&lt;/strong&gt; to try authenticating to first. So I list out the shares.&lt;/p&gt;
 
 &lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~# smbclient -L \\10.10.10.134
 Enter WORKGROUP\root's password:
@@ -86,7 +86,7 @@ smb: \&amp;gt; dir
 
                 7735807 blocks of size 4096. 2745314 blocks available&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
 
-&lt;p&gt;Our null session worked. We have read access to the &lt;code class=&quot;highlighter-rouge&quot;&gt;Backups&lt;/code&gt; share.&lt;/p&gt;
+&lt;p&gt;My null session worked. I have read access to the &lt;code class=&quot;highlighter-rouge&quot;&gt;Backups&lt;/code&gt; share.&lt;/p&gt;
 
 &lt;p&gt;Although there aren’t that many files in the share, some are massive. Here’s a quick look of the interesting directory &lt;code class=&quot;highlighter-rouge&quot;&gt;WindowsImageBackup&lt;/code&gt;.&lt;/p&gt;
 
@@ -103,32 +103,32 @@ smb: \&amp;gt; dir
 
 &lt;h1 id=&quot;mounting-shares-and-vhd-files&quot;&gt;Mounting shares and VHD files&lt;/h1&gt;
 
-&lt;p&gt;If we mount the share, we can view it as if it were part of our own file system.&lt;/p&gt;
+&lt;p&gt;If I mount the share, I can view it as if it were part of my own file system.&lt;/p&gt;
 
 &lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~# mount -t cifs -o username=anonymous //10.10.10.134/Backups Backups
 Password for anonymous@//10.10.10.134/Backups:  &lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
 
 &lt;p&gt;&lt;img src=&quot;/images/bastion/image2.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
 
-&lt;p&gt;The VHDs, though, aren’t readable this way. To browse through them, we have to mount those as well. For VHD files, we have to first install &lt;code class=&quot;highlighter-rouge&quot;&gt;guestmount&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;The VHDs, though, aren’t readable this way. To browse through them, I have to mount those as well. For VHD files, I have to first install &lt;code class=&quot;highlighter-rouge&quot;&gt;guestmount&lt;/code&gt;.&lt;/p&gt;
 
 &lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~# apt-get install libguestfs-tools&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
 
-&lt;p&gt;Then we create a new directory as the mountpoint.&lt;/p&gt;
+&lt;p&gt;Then I create a new directory as the mountpoint.&lt;/p&gt;
 
 &lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~# mkdir vhd1&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
 
-&lt;p&gt;And we mount the VHD file.&lt;/p&gt;
+&lt;p&gt;And I mount the VHD file.&lt;/p&gt;
 
 &lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~# guestmount --add &quot;/root/Backups/WindowsImageBackup/L4mpje-PC/Backup 2019-02-22 124351/9b9cfbc4-369e-11e9-a17c-806e6f6e6963.vhd&quot; --inspector --ro /root/vhd1 -v&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
 
-&lt;p&gt;Now we can browse through the file system as if it were part of our own.&lt;/p&gt;
+&lt;p&gt;Now I can browse through the file system as if it were part of my own.&lt;/p&gt;
 
 &lt;p&gt;&lt;img src=&quot;/images/bastion/image3.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
 
 &lt;p&gt;&lt;em&gt;Note: One of the VHDs wouldn’t mount properly. Turns out it isn’t necessary to mount anyway.&lt;/em&gt;&lt;/p&gt;
 
-&lt;p&gt;Now with read access to the VHD, my first instinct is to go for the &lt;strong&gt;flags&lt;/strong&gt;, but there’s nothing at &lt;code class=&quot;highlighter-rouge&quot;&gt;C:\Users\L4mpje\Desktop&lt;/code&gt; or &lt;code class=&quot;highlighter-rouge&quot;&gt;C:\Users\Administrator\Desktop&lt;/code&gt;. So we clearly don’t have the right access just yet.&lt;/p&gt;
+&lt;p&gt;Now with read access to the VHD, my first instinct is to go for the &lt;strong&gt;flags&lt;/strong&gt;, but there’s nothing at &lt;code class=&quot;highlighter-rouge&quot;&gt;C:\Users\L4mpje\Desktop&lt;/code&gt; or &lt;code class=&quot;highlighter-rouge&quot;&gt;C:\Users\Administrator\Desktop&lt;/code&gt;. So I clearly don’t have the right access just yet.&lt;/p&gt;
 
 &lt;p&gt;Next thing to do would be to search for &lt;strong&gt;user credentials&lt;/strong&gt;. After checking for credentials lying around in obvious places, I go for the SAM and SECURITY files.&lt;/p&gt;
 
@@ -166,7 +166,7 @@ L4mpje:1000:aad3b435b51404eeaad3b435b51404ee:26112010952d963c8dc4217daec986d9:::
 
 &lt;p&gt;&lt;img src=&quot;/images/bastion/image4.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
 
-&lt;p&gt;To get in, we &lt;code class=&quot;highlighter-rouge&quot;&gt;ssh&lt;/code&gt; as &lt;strong&gt;L4mpje@10.10.10.134&lt;/strong&gt; with the recovered password.&lt;/p&gt;
+&lt;p&gt;To get in, I &lt;code class=&quot;highlighter-rouge&quot;&gt;ssh&lt;/code&gt; as &lt;strong&gt;L4mpje@10.10.10.134&lt;/strong&gt; with the recovered password.&lt;/p&gt;
 
 &lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~# ssh L4mpje@10.10.10.134
 L4mpje@10.10.10.134's password: 
@@ -208,7 +208,7 @@ l4mpje@BASTION C:\Users\L4mpje&amp;gt;    &lt;/code&gt;&lt;/pre&gt;&lt;/figure&g
                0 File(s)              0 bytes                                   
               14 Dir(s)  11.244.994.560 bytes free                              &lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
 
-&lt;p&gt;We can find the version number in the changelog file and search for a known exploit, but this doesn’t get us very far.&lt;/p&gt;
+&lt;p&gt;I can find the version number in the changelog file and search for a known exploit, but this doesn’t get us very far.&lt;/p&gt;
 
 &lt;p&gt;A search for “mRemoteNG stored credentials”, however, results in &lt;a href=&quot;http://hackersvanguard.com/mremoteng-insecure-password-storage/&quot;&gt;exactly what we’re looking for&lt;/a&gt;:&lt;/p&gt;
 
@@ -216,32 +216,79 @@ l4mpje@BASTION C:\Users\L4mpje&amp;gt;    &lt;/code&gt;&lt;/pre&gt;&lt;/figure&g
   &lt;p&gt;mRemoteNG uses insecure methods for password storage and can provide droves of valid credentials during an assessment or competition.&lt;/p&gt;
 &lt;/blockquote&gt;
 
-&lt;p&gt;As the post explains, mRemoteNG is used to help manage remote connections (e.g., SSH, RDP). Credentials for these sessions may be stored insecurely in a file called &lt;code class=&quot;highlighter-rouge&quot;&gt;confCons.xml&lt;/code&gt;. Lo and behold, we can find an encrypted password (right beside &lt;strong&gt;Username=”Administrator”&lt;/strong&gt;) in C:\Users\L4mpje\AppData\Roaming\mRemoteNG\confCons.xml.&lt;/p&gt;
+&lt;p&gt;As the post explains, mRemoteNG is used to help manage remote connections (e.g., SSH, RDP). Credentials for these sessions may be stored insecurely in a file called &lt;code class=&quot;highlighter-rouge&quot;&gt;confCons.xml&lt;/code&gt;. Lo and behold, I can find an encrypted password (right beside &lt;strong&gt;Username=”Administrator”&lt;/strong&gt;) in C:\Users\L4mpje\AppData\Roaming\mRemoteNG\confCons.xml.&lt;/p&gt;
 
 &lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-xml&quot; data-lang=&quot;xml&quot;&gt;&lt;span class=&quot;nt&quot;&gt;&amp;lt;Node&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Name=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;DC&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Type=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;Connection&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Descr=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Icon=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;mRemoteNG&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Panel=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;General&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Id=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;500e7d58-662a-44d4-aff0-3a4f547a3fee&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Username=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;Administrator&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Domain=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Password=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;aEWNFV5uGcjUHF0uS17QTdT9kVqtKCPeoC0Nw5dmaPFjNQ2kt/zO5xDqE4HdVmHAowVRdC7emf7lWWA10dQKiw==&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Hostname=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;127.0.0.1&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Protocol=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;RDP&quot;&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;.&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;.&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;.&lt;/span&gt; &lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
 
-&lt;p&gt;This specifies that the protocol is RDP. We can assume that this credential would be reused for SSH as well.&lt;/p&gt;
+&lt;p&gt;This specifies that the protocol is RDP. We can assume that this credential would be reused for SSH as well. We can abuse these stored credentials in a few different ways.&lt;/p&gt;
 
-&lt;p&gt;You can find a handful of options available for decrypting an mRemoteNG password. The previously linked-to &lt;a href=&quot;http://hackersvanguard.com/mremoteng-insecure-password-storage/&quot;&gt;blog post&lt;/a&gt; describes a method via the GUI, which seems to be the intended way in this box.&lt;/p&gt;
+&lt;h3 id=&quot;method-1-extended-tools-password-lookup&quot;&gt;Method 1: Extended Tools password lookup&lt;/h3&gt;
 
-&lt;p&gt;What worked best for me was &lt;a href=&quot;https://github.com/haseebT/mRemoteNG-Decrypt&quot;&gt;mRemoteNG_Decrypt.py&lt;/a&gt;. I copied the encrypted password and passed it as a string to get the plaintext credential.&lt;/p&gt;
+&lt;p&gt;The previously linked-to &lt;a href=&quot;http://hackersvanguard.com/mremoteng-insecure-password-storage/&quot;&gt;blog post&lt;/a&gt; describes a method via the GUI, which seems to be the intended way in this box. I switch over to a Windows VM, download mRemoteNG, and start it up.&lt;/p&gt;
 
-&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~# python3 mremoteng_decrypt.py -s &quot;aEWNFV5uGcjUHF0uS17QTdT9kVqtKCPeoC0Nw5dmaPFjNQ2kt/zO5xDqE4HdVmHAowVRdC7emf7lWWA10dQKiw==&quot;
-Password: thXLHM96BeKL0ER2&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+&lt;p&gt;&lt;img src=&quot;/images/bastion/image10.PNG&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
 
-&lt;p&gt;From here, we simply have to SSH in as Administrator.&lt;/p&gt;
+&lt;p&gt;I import the confCons.xml file by going to &lt;strong&gt;File &amp;gt; Open Connection File…&lt;/strong&gt; I see two saved connections.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/bastion/image11.PNG&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;“DC” is the one we’re after. This is the stored Administrator RDP connection.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/bastion/image12.PNG&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;The &lt;a href=&quot;http://hackersvanguard.com/mremoteng-insecure-password-storage/&quot;&gt;blog post&lt;/a&gt; explains that I need to create a new Extended Tool that acts as a password decrypter. I go to &lt;strong&gt;Tools &amp;gt; External Tools&lt;/strong&gt; and click &lt;strong&gt;New&lt;/strong&gt;.&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Display Name can be anything really. (I put &lt;code class=&quot;highlighter-rouge&quot;&gt;Password Lookup&lt;/code&gt; per the blog.)&lt;/li&gt;
+  &lt;li&gt;Filename should be &lt;code class=&quot;highlighter-rouge&quot;&gt;CMD&lt;/code&gt;.&lt;/li&gt;
+  &lt;li&gt;Arguments should be &lt;code class=&quot;highlighter-rouge&quot;&gt;/k echo %password%&lt;/code&gt;.
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;img src=&quot;/images/bastion/image13.PNG&quot; alt=&quot;&quot; /&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Once the tool is created, I right-click the connection (DC) and select &lt;strong&gt;External Tools &amp;gt; Password Lookup&lt;/strong&gt;. A command prompt appears with the password in cleartext.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/bastion/image14.PNG&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;With these credentials, I can SSH in as Administrator . . .&lt;/p&gt;
 
 &lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~# ssh Administrator@10.10.10.134
 Administrator@10.10.10.134's password: &lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
 
-&lt;p&gt;And the root flag is in Administrator’s Desktop folder.&lt;/p&gt;
+&lt;p&gt;. . . and grab the flag.&lt;/p&gt;
 
 &lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;administrator@BASTION C:\Users\Administrator&amp;gt; type Desktop\root.txt                                                             
 9588############################&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;h3 id=&quot;method-2-connecting-directly-from-mremoteng&quot;&gt;Method 2: Connecting directly from mRemoteNG&lt;/h3&gt;
+
+&lt;p&gt;We actually don’t have to uncover the password at all to get Administrator access. If you’ve started up mRemoteNG and imported confCons.xml, just:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Change the IP address from 127.0.0.1 to 10.10.10.134.&lt;/li&gt;
+  &lt;li&gt;Change the connection method from RDP to SSH version 2. (Our nmap scan showed SSH but not RDP.)
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;img src=&quot;/images/bastion/image16.PNG&quot; alt=&quot;&quot; /&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Right-click the connection (DC) from the connections list, click &lt;strong&gt;Connect&lt;/strong&gt;, and you’ll have an interactive SSH session as Administrator.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/bastion/image17.PNG&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;h3 id=&quot;method-3-decrypting-with-mremoteng_decryptpy&quot;&gt;Method 3: Decrypting with mremoteng_decrypt.py&lt;/h3&gt;
+
+&lt;p&gt;Sometime after the box was released, a neat script called &lt;a href=&quot;https://github.com/haseebT/mRemoteNG-Decrypt&quot;&gt;mRemoteNG_Decrypt.py&lt;/a&gt; popped up. All you have to do is copy the encrypted password from confCons.xml and pass it as a string to get the plaintext credential.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~# python3 mremoteng_decrypt.py -s &quot;aEWNFV5uGcjUHF0uS17QTdT9kVqtKCPeoC0Nw5dmaPFjNQ2kt/zO5xDqE4HdVmHAowVRdC7emf7lWWA10dQKiw==&quot;
+Password: thXLHM96BeKL0ER2&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Not as satisfying as the other methods, but it’s always good to have a quick-and-dirty way that doesn’t involve spinning up a separate Windows environment and installing software.&lt;/p&gt;
 </description>
-        <pubDate>Wed, 25 Sep 2019 14:02:19 -0400</pubDate>
-        <link>http://localhost:4000/writeup/2019/09/25/bastion-writeup/</link>
-        <guid isPermaLink="true">http://localhost:4000/writeup/2019/09/25/bastion-writeup/</guid>
+        <pubDate>Sat, 05 Oct 2019 08:00:00 -0400</pubDate>
+        <link>http://localhost:4000/writeup/2019/10/05/bastion-writeup/</link>
+        <guid isPermaLink="true">http://localhost:4000/writeup/2019/10/05/bastion-writeup/</guid>
         
         <category>hackthebox</category>
         

@@ -1,7 +1,7 @@
 ---
 layout:     post
-title:      Bastion
-date:       2019-09-25 18:02:19
+title:      Bastion (HTB)
+date:       2019-10-05 12:00:00
 summary:    Write-up of HackTheBox's Bastion.
 categories: writeup
 thumbnail: fort-awesome
@@ -14,7 +14,7 @@ tags:
 
 ![](/images/bastion/infocard.png)
 
-Bastion is a relatively straightforward box with one strange quirk: to enumerate appropriately, you have to mount a VHD within an SMB share (that you also have to mount...). It isn't difficult to do these things, but it does take some creative thinking to consider. Privilege escalation involves insecure stored credentials with mRemoteNG. Here, I use a Python script released publicly _after_ this box went live--but others who did the box earlier in its life were able to use the stored credentials in the mRemoteNG GUI itself.
+Bastion is a relatively straightforward box with one strange quirk: to enumerate appropriately, you have to mount a VHD within an SMB share (that you also have to mount...). It isn't difficult to do these things, but it does take some creative thinking to consider. Privilege escalation leverages the insecure manner in which mRemoteNG stores credentials. You can exploit this in a couple of cool ways through the mRemoteNG GUI itself—or, you can opt for the quick (but forgettable) Python script that wasn't available until _after_ the box was released.
 
 # Initial Scan
 
@@ -63,7 +63,7 @@ Not much to look into aside from SMB.
 
 # Enumerating SMB
 
-It's always worth testing to see if SMB permits null (aka anonymous) sessions. __We need a share__ to try authenticating to first. So we list out the shares.
+It's always worth testing to see if SMB permits null (aka anonymous) sessions. __We need a share__ to try authenticating to first. So I list out the shares.
 
 {% highlight plaintext %}
 root@kali:~# smbclient -L \\10.10.10.134
@@ -94,7 +94,7 @@ smb: \> dir
 
 {% endhighlight %}
 
-Our null session worked. We have read access to the `Backups` share.
+My null session worked. I have read access to the `Backups` share.
 
 Although there aren't that many files in the share, some are massive. Here's a quick look of the interesting directory `WindowsImageBackup`.
 
@@ -114,7 +114,7 @@ Virtual hard disks? Definitely something to look at. But `5418299392` blocks? Th
 
 # Mounting shares and VHD files
 
-If we mount the share, we can view it as if it were part of our own file system.
+If I mount the share, I can view it as if it were part of my own file system.
 
 {% highlight plaintext %}
 root@kali:~# mount -t cifs -o username=anonymous //10.10.10.134/Backups Backups
@@ -123,31 +123,31 @@ Password for anonymous@//10.10.10.134/Backups:
 
 ![](/images/bastion/image2.png)
 
-The VHDs, though, aren't readable this way. To browse through them, we have to mount those as well. For VHD files, we have to first install `guestmount`.
+The VHDs, though, aren't readable this way. To browse through them, I have to mount those as well. For VHD files, I have to first install `guestmount`.
 
 {% highlight plaintext %}
 root@kali:~# apt-get install libguestfs-tools
 {% endhighlight %}
 
-Then we create a new directory as the mountpoint.
+Then I create a new directory as the mountpoint.
 
 {% highlight plaintext %}
 root@kali:~# mkdir vhd1
 {% endhighlight %}
 
-And we mount the VHD file.
+And I mount the VHD file.
 
 {% highlight plaintext %}
 root@kali:~# guestmount --add "/root/Backups/WindowsImageBackup/L4mpje-PC/Backup 2019-02-22 124351/9b9cfbc4-369e-11e9-a17c-806e6f6e6963.vhd" --inspector --ro /root/vhd1 -v
 {% endhighlight %}
 
-Now we can browse through the file system as if it were part of our own.
+Now I can browse through the file system as if it were part of my own.
 
 ![](/images/bastion/image3.png)
 
 _Note: One of the VHDs wouldn't mount properly. Turns out it isn't necessary to mount anyway._
 
-Now with read access to the VHD, my first instinct is to go for the __flags__, but there's nothing at `C:\Users\L4mpje\Desktop` or `C:\Users\Administrator\Desktop`. So we clearly don't have the right access just yet.
+Now with read access to the VHD, my first instinct is to go for the __flags__, but there's nothing at `C:\Users\L4mpje\Desktop` or `C:\Users\Administrator\Desktop`. So I clearly don't have the right access just yet.
 
 Next thing to do would be to search for __user credentials__. After checking for credentials lying around in obvious places, I go for the SAM and SECURITY files.
 
@@ -193,7 +193,7 @@ The password for use L4mpje is __bureaulampje__. The Administrator and Guest acc
 
 ![](/images/bastion/image4.png)
 
-To get in, we `ssh` as __L4mpje@10.10.10.134__ with the recovered password.
+To get in, I `ssh` as __L4mpje@10.10.10.134__ with the recovered password.
 
 {% highlight plaintext %}
 root@kali:~# ssh L4mpje@10.10.10.134
@@ -241,39 +241,82 @@ l4mpje@BASTION C:\>dir "Program Files (x86)"
               14 Dir(s)  11.244.994.560 bytes free                              
 {% endhighlight %}
 
-We can find the version number in the changelog file and search for a known exploit, but this doesn't get us very far. 
+I can find the version number in the changelog file and search for a known exploit, but this doesn't get us very far. 
 
 A search for "mRemoteNG stored credentials", however, results in [exactly what we're looking for](http://hackersvanguard.com/mremoteng-insecure-password-storage/):
 
 > mRemoteNG uses insecure methods for password storage and can provide droves of valid credentials during an assessment or competition.
 
-As the post explains, mRemoteNG is used to help manage remote connections (e.g., SSH, RDP). Credentials for these sessions may be stored insecurely in a file called `confCons.xml`. Lo and behold, we can find an encrypted password (right beside __Username="Administrator"__) in C:\Users\L4mpje\AppData\Roaming\mRemoteNG\confCons.xml.
+As the post explains, mRemoteNG is used to help manage remote connections (e.g., SSH, RDP). Credentials for these sessions may be stored insecurely in a file called `confCons.xml`. Lo and behold, I can find an encrypted password (right beside __Username="Administrator"__) in C:\Users\L4mpje\AppData\Roaming\mRemoteNG\confCons.xml.
 
 {% highlight xml %}
 <Node Name="DC" Type="Connection" Descr="" Icon="mRemoteNG" Panel="General" Id="500e7d58-662a-44d4-aff0-3a4f547a3fee" Username="Administrator" Domain="" Password="aEWNFV5uGcjUHF0uS17QTdT9kVqtKCPeoC0Nw5dmaPFjNQ2kt/zO5xDqE4HdVmHAowVRdC7emf7lWWA10dQKiw==" Hostname="127.0.0.1" Protocol="RDP" . . . 
 {% endhighlight %}
 
-This specifies that the protocol is RDP. We can assume that this credential would be reused for SSH as well.
+This specifies that the protocol is RDP. We can assume that this credential would be reused for SSH as well. We can abuse these stored credentials in a few different ways.
 
-You can find a handful of options available for decrypting an mRemoteNG password. The previously linked-to [blog post](http://hackersvanguard.com/mremoteng-insecure-password-storage/) describes a method via the GUI, which seems to be the intended way in this box. 
+### Method 1: Extended Tools password lookup
 
-What worked best for me was [mRemoteNG_Decrypt.py](https://github.com/haseebT/mRemoteNG-Decrypt). I copied the encrypted password and passed it as a string to get the plaintext credential.
+The previously linked-to [blog post](http://hackersvanguard.com/mremoteng-insecure-password-storage/) describes a method via the GUI, which seems to be the intended way in this box. I switch over to a Windows VM, download mRemoteNG, and start it up.
 
-{% highlight plaintext %}
-root@kali:~# python3 mremoteng_decrypt.py -s "aEWNFV5uGcjUHF0uS17QTdT9kVqtKCPeoC0Nw5dmaPFjNQ2kt/zO5xDqE4HdVmHAowVRdC7emf7lWWA10dQKiw=="
-Password: thXLHM96BeKL0ER2
-{% endhighlight %}
+![](/images/bastion/image10.PNG)
 
-From here, we simply have to SSH in as Administrator.
+I import the confCons.xml file by going to __File > Open Connection File...__ I see two saved connections.
+
+![](/images/bastion/image11.PNG)
+
+"DC" is the one we're after. This is the stored Administrator RDP connection.
+
+![](/images/bastion/image12.PNG)
+
+The [blog post](http://hackersvanguard.com/mremoteng-insecure-password-storage/) explains that I need to create a new Extended Tool that acts as a password decrypter. I go to __Tools > External Tools__ and click __New__.
+
+* Display Name can be anything really. (I put `Password Lookup` per the blog.)
+* Filename should be `CMD`.
+* Arguments should be `/k echo %password%`.
+<br>
+<br>
+![](/images/bastion/image13.PNG)
+
+Once the tool is created, I right-click the connection (DC) and select __External Tools > Password Lookup__. A command prompt appears with the password in cleartext.
+
+![](/images/bastion/image14.PNG)
+
+With these credentials, I can SSH in as Administrator . . . 
 
 {% highlight plaintext %}
 root@kali:~# ssh Administrator@10.10.10.134
 Administrator@10.10.10.134's password: 
 {% endhighlight %}
 
-And the root flag is in Administrator's Desktop folder.
+. . . and grab the flag.
 
 {% highlight plaintext %}
 administrator@BASTION C:\Users\Administrator> type Desktop\root.txt                                                             
 9588############################
 {% endhighlight %}
+
+### Method 2: Connecting directly from mRemoteNG
+
+We actually don't have to uncover the password at all to get Administrator access. If you've started up mRemoteNG and imported confCons.xml, just:
+
+* Change the IP address from 127.0.0.1 to 10.10.10.134.
+* Change the connection method from RDP to SSH version 2. (Our nmap scan showed SSH but not RDP.)
+<br>
+<br>
+![](/images/bastion/image16.PNG)
+
+Right-click the connection (DC) from the connections list, click __Connect__, and you'll have an interactive SSH session as Administrator.
+
+![](/images/bastion/image17.PNG)
+
+### Method 3: Decrypting with mremoteng_decrypt.py
+
+Sometime after the box was released, a neat script called [mRemoteNG_Decrypt.py](https://github.com/haseebT/mRemoteNG-Decrypt) popped up. All you have to do is copy the encrypted password from confCons.xml and pass it as a string to get the plaintext credential.
+
+{% highlight plaintext %}
+root@kali:~# python3 mremoteng_decrypt.py -s "aEWNFV5uGcjUHF0uS17QTdT9kVqtKCPeoC0Nw5dmaPFjNQ2kt/zO5xDqE4HdVmHAowVRdC7emf7lWWA10dQKiw=="
+Password: thXLHM96BeKL0ER2
+{% endhighlight %}
+
+Not as satisfying as the other methods, but it's always good to have a quick-and-dirty way that doesn't involve spinning up a separate Windows environment and installing software.

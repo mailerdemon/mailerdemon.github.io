@@ -4,7 +4,7 @@ email: phaz0n808@gmail.com
 description: "A blog"
 baseurl: ""
 url: "https://phaz0n.github.io"
-title_description: "HackTheBox write-ups. Maybe more someday."
+title_description: ""
 title_image: "/images/metroid.png"
 google_analytics: UA-148827626-1
 disqus_account: phaz0n
