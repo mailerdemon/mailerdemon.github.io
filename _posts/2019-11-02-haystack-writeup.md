@@ -1,6 +1,6 @@
 ---
 layout:     post
-title:      Haystack
+title:      Haystack (HTB)
 date:       2019-11-02 11:00:00
 summary:    Write-up of HackTheBox's Haystack.
 categories: writeup
